@@ -1,0 +1,28 @@
+package kr.happyjob.study.like.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+public class LikeResponseDto {
+
+	@AllArgsConstructor
+	@NoArgsConstructor
+	@Setter
+	@Getter
+	public static class LikeList {
+		
+		private int adNo;
+		private String title;
+		private String companyName;
+		private String experience;
+		private String position;
+		private String salary;
+		private String dueDate;
+		private String daysLeft;
+		private boolean applied;
+		private int totalCount;
+		
+	}
+}

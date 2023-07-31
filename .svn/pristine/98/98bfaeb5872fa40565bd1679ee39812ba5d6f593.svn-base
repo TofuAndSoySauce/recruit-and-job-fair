@@ -1,0 +1,39 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+
+<!-- 받은 메일함 데이터 가져오기 -->
+
+<!-- forEach : 반복문 
+           반복문을 쓰는 이유 : 데이터를 List로 받았기에 반복문을 씁니다. (쉬운 이유 : 데이터가 한건만 있는게 아니고 많은 건수가 있어서 반복문을 씁니다.)
+     items : List 변수명(데이터)  -->
+     
+<c:if test="${countReceMailList eq 0}">
+
+	<tr><td colspan='4'>해당 데이터가 없습니다.</td></tr>
+	
+</c:if>
+
+<c:if test="${countReceMailList > 0 }">
+
+	<c:forEach items="${mailReceList}" var="list">
+
+		<c:if test="${list.is_delete eq 2}">
+	
+			<tr>
+	
+				<td><input type="checkbox" name="mail_no" value="${list.mail_no}"></td>
+				<td>${list.name}</td>
+				<td><a href="javascript:fn_openReceDetail(${list.mail_no})">${list.mail_title}</a></td>
+				<td>${list.reg_date}</td>
+		
+			</tr>
+	
+		</c:if>
+	
+	</c:forEach>
+	
+</c:if>
+
+<input type="hidden" id="totRececnt" name="totRececnt" value="${countReceMailList}"/>

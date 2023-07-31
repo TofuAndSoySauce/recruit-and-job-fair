@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.happyjob.study.userinfo.dao.ProfileEditDao">
+<select id="profileEditInfo" resultType="kr.happyjob.study.userinfo.model.ProfileEditModel">
+		SELECT ui.loginID,
+	       ui.name,
+	       ui.password,
+	       ifnull(ui.user_phone, '전화번호를 입력하세요') AS phone,
+	       ifnull(ui.user_zipcode, '-') AS zipcode,
+	       ifnull(ui.user_address1, '-') AS address1,
+	       ifnull(ui.user_address2, '-') AS address2,
+	       ifnull(ui.user_email, '-') AS email,
+	       ifnull(ui.user_birthday, '--') AS birthday,
+	       ifnull(preferposition.detail_code, '-') AS preferPositionCd,
+	       ifnull(preferposition.detail_name, '-') AS preferPosition,
+	       ifnull(preferarea.detail_code, '-') AS preferAreaCd,
+	       ifnull(preferarea.detail_name, '-') AS preferArea,
+	       ifnull(sexuality.detail_name, '-') AS sexuality,
+	        ifnull(tf.file_cd, 0) AS fileCd,
+	       tf.file_name,
+	       tf.file_size,
+	       tf.file_nadd,
+	       tf.file_madd
+		FROM tb_userinfo ui
+		     LEFT OUTER JOIN tb_detail_code preferarea
+		        ON     preferarea.group_code = 'location'
+		           AND preferarea.detail_code = ui.user_preferarea
+		     LEFT OUTER JOIN tb_detail_code preferposition
+		        ON     preferposition.group_code = 'position'
+		           AND preferposition.detail_code = ui.user_preferposition
+		     LEFT OUTER JOIN tb_detail_code sexuality
+		        ON     sexuality.group_code = 'user_sexuality'
+		           AND sexuality.detail_code = ui.user_sexuality
+         LEFT OUTER JOIN tb_file tf ON ui.file_cd = tf.file_cd
+
+		WHERE loginID = #{loginId}
+	</select>
+		<!-- 개인정보 수정  file -->
+ 	<update id="profileEditUpdate">
+	update tb_userinfo
+			set 
+		       password  = #{password} ,
+		       user_phone = #{phone} ,
+		       user_zipcode = #{zipcode} ,
+		       user_address1 = #{address1} ,
+		       user_address2  = #{address2} ,
+		       user_email  = #{email} ,
+		       user_preferposition  = #{preferPosition} ,
+ 		       user_preferarea  = #{preferArea} ,
+		       update_date = date_format(Now(), '%Y-%m-%d'),
+		       file_cd = #{filecd}
+		where loginID = #{loginId}
+	</update>
+	
+	<!-- preferPosition 선호직무 셀렉트박스-->
+	<select id="preferPosition" resultType="kr.happyjob.study.userinfo.model.ProfileEditModel">
+	SELECT 
+		detail_code AS preferPositionCd, 
+		detail_name AS preferPosition
+	FROM tb_detail_code
+	WHERE group_code = "position"
+	</select>
+	<!-- preferArea  선호근무지역 셀렉트박스-->
+	<select id="preferArea" resultType="kr.happyjob.study.userinfo.model.ProfileEditModel">
+	SELECT 
+		detail_code AS preferAreaCd, 
+		detail_name AS preferArea
+	FROM tb_detail_code
+	WHERE group_code = "location"
+	</select>
+		<!-- 파일 코드 생성 -->
+	<select id="filecdcheck" resultType="int">
+		select
+			ifnull(max(file_cd),0) + 1
+		FROM tb_file
+	</select>
+	
+	<!-- 파일 저장 -->
+	<insert id="filenewsave">
+		insert into tb_file
+		(
+		file_cd
+		,file_type
+		,file_size
+		,file_name
+		,file_nadd
+		,file_madd
+		) values (
+		#{filecd}
+		,#{file_type}
+		,#{file_size}
+		,#{file_name}
+		,#{file_nadd}
+		,#{file_madd}
+		)
+	</insert>
+	<!-- 파일정보 업데이트 -->
+	<update id="fileupdate">
+		update tb_file
+			set
+		 		file_type = #{file_type}
+		,		file_size = #{file_size}
+		,		file_name = #{file_name}
+		,		file_nadd = #{file_nadd}
+		,		file_madd = #{file_madd}
+		where	file_cd = #{filecd}
+	</update>
+</mapper>

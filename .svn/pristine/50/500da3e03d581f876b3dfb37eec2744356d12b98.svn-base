@@ -1,0 +1,346 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>취업 박람회 목록 및 신청</title>
+<!-- sweet alert import -->
+<script src='${CTX_PATH}/js/sweetalert/sweetalert.min.js'></script>
+<jsp:include page="/WEB-INF/view/common/common_include.jsp"></jsp:include>
+<!-- sweet swal import -->
+
+<script type="text/javascript">
+
+	var pageSize = 5; // 한 페이지당 보여줄 데이터
+	var pageBlockSize = 5; // 한 화면에 몇 페이지를 보여줄지 (1~5 페이지 -> 6~10 페이지)
+
+	$(function(){
+	
+		// Select 박스 에서 지역 박스 불러오기
+		comcombo("location","region","sel","");
+	
+		// 박람회 조회
+		fn_searchJobFair();
+	
+	})
+	
+	function initpopup(object){
+		
+		$("#fair_title2").val(object.fair_title);
+		$("#address").val(object.fair_address1 + " " +object.fair_address2);
+		$("#Date").val(object.fair_startdate + " ~ " + object.fair_enddate);
+		$("#name").val(object.fair_name);
+		$("#user_phone").val(object.user_phone);
+		$("#user_email").val(object.user_email);
+		$("#loginId2").val(object.login);
+		
+		var exist_yn = $("#exist_yn").val(object.exist_yn);
+		
+		if(object.exist_yn == 1 || object.fair_userNum == 0){
+			
+			$("#offer").hide();
+			
+		}
+		
+		$("#fair_no2").val(object.fair_no);
+		
+		// 저장된 파일 미리보기
+		var file_name = object.file_name;
+		var filearr = [];
+		var previewhtml = "";
+		
+		if( file_name == "" || file_name == null || file_name == undefined) previewhtml = "";
+		else {
+			filearr = file_name.split(".");
+			if (filearr[1] == "jpg" || filearr[1] == "png") previewhtml = "<a href='javascript:fn_downaload()'>   <img src='" + object.file_nadd + "' style='width: 200px; height: 130px;' />  </a>";
+			else previewhtml = "<a href='javascript:fn_downaload()'>" + object.file_name  + "</a>";
+		}
+		
+		$("#fileview").empty().append(previewhtml);
+		
+	}
+	
+	// 박람회 조회 함수
+	function fn_searchJobFair(cpage){
+		
+		// 현재 페이지가 1이 아니면 1로 가게 하는 함수 (1이면 1로 가고 1이 아니면 1로 가는 함수)
+		cpage = cpage || 1;
+		
+		if($("#search").click(function(){
+			
+			if($("#region").val() == "" ) {
+				
+				swal("지역을 입력해 주세요!!");
+				
+				return;
+					
+			} if($("#srctitle").val() == ""){
+				
+				swal("제목을 입력해 주세요!!");
+				
+				return;
+				
+			}
+			
+		})
+		
+		// mapper 문서와 jsp 문서간에 주고 받는 데이터들을 객체로 만들었다 (where절임.)
+		var param = {
+				
+				// 검색 조건
+				srctitle : $("#srctitle").val(), // 제목
+				region : $("#region").val(), // 구분(신입/경력)
+						
+				pageSize : pageSize,
+				cpage : cpage
+				
+		}
+		
+		var listcallback = function(res) {
+			
+			$("#listJobFair").empty().append(res);
+			
+			var countJobFairList = $("[name=totcnt]").val();
+			
+			// 페이지 네이션을 적용하는 함수
+			var paging = getPaginationHtml(cpage, countJobFairList, pageSize, pageBlockSize, 'fn_searchJobFair');
+			
+			$("#propStatPagination").empty().append(paging); // append : 현재 대상의 엘리면트 내에 맨끝에 새로운 앨리면트를 추가하는 함수
+			
+			$("#currentpage").val(cpage);
+			
+		}
+		
+		callAjax("/fair/JobFairList.do", "post", "text", "false", param, listcallback);
+		
+	}
+	
+	function fn_openJobFair(fair_no){
+		
+		var param = {
+				
+				fair_no : fair_no
+				
+			}
+		
+		var detailcallback = function(res){
+			
+			console.log(res);
+			
+			initpopup(res);
+			
+			gfModalPop("#JobFairReg");
+			
+		}
+		
+		callAjax("/fair/JobFairDetail.do", "post", "json", "false", param, detailcallback);
+		
+	}
+	
+	function fn_JobFairSave(){
+		
+		var memo = $("#userNm").val() + "님 " + $("#fair_title").val() + "을 신청되었습니다.";
+		
+		var mail_title = $("#userNm").val() + "님 " + $("#fair_title").val() + "을 신청되었습니다.";
+		
+		var mail_content = "안녕하세요 " + memo + " 감사합니다. ";
+			
+		// mapper 문서에서 insert할 속성들의 모음 (mapper 문서에서 강제로 값을 넣거나 now()를 쓰는 date 타입의 변수를 제외한 속성들)
+		var param = {
+				
+				fair_no : $("#fair_no2").val(),
+				
+				mail_title : mail_title,
+				
+				mail_content : mail_content,
+				
+				id : $("#id").val(),
+				
+				mailother : $("#loginId").val()
+				
+		}
+		
+		var savecallback = function(res){
+			
+			if(res.result == "SUCCESS"){
+				
+				alert("저장되었습니다.");
+				
+				gfCloseModal();
+				
+				fn_searchJobFair();
+				
+			}
+			
+		}
+		
+		callAjax("/fair/JobFairSave.do", "post", "json", "false", param, savecallback);
+		
+	}
+
+</script>
+
+</head>
+
+<body>
+
+<form id="JobFair" action="" method="">
+		<!-- <input type="hidden" name="action" id="action" value=""> -->
+		<input type="hidden" name="loginId" id="loginId" value="${loginId}"> <!-- 내눈에는 안보이지만 로그인한 아이디값은 폼 안에 있다. -->
+		<input type="hidden" name="userNm" id="userNm" value="${userNm}">
+		<input type="hidden" name="resumeno" id="resumeno" value=""> 
+		<input type="hidden" name="currentpage" id="currentpage" value="">
+		<input type="hidden" name="filecd" id="filecd" value="">
+		<input type="hidden" name="memo" id="memo" value="">
+		
+		<!-- 모달 배경 -->
+		<div id="mask"></div>
+
+		<div id="wrap_area">
+
+			<h2 class="hidden">header 영역</h2>
+			<jsp:include page="/WEB-INF/view/common/header.jsp"></jsp:include>
+
+			<h2 class="hidden">컨텐츠 영역</h2>
+			<div id="container">
+				<ul>
+					<li class="lnb">
+						<!-- lnb 영역 --> <jsp:include
+							page="/WEB-INF/view/common/lnbMenu.jsp"></jsp:include> <!--// lnb 영역 -->
+					</li>
+					<li class="contents">
+						<!-- contents -->
+						<h3 class="hidden">contents 영역</h3> <!-- content -->
+						<div class="content">
+
+							<p class="Location">
+								<a href="../dashboard/dashboard.do" class="btn_set home">메인으로</a>
+								<span class="btn_nav bold">취업박람회</span> 
+								<span class="btn_nav bold">취업박람회</span> 
+								<a href="../fair/jobFair.do" class="btn_set refresh">새로고침</a>
+							</p>
+							<p class="conTitle">
+								<span class="btn_nav bold" id="proposalStatus">취업 박람회 목록 및 신청(취준생) </span>
+							</p>
+
+							<p>
+								<span class="fr">
+									<select class="form-control" name="region" id="region">
+									</select>
+									박람회 명 <input type="text" id="srctitle" name="srctitle" />
+									<a class="btnType blue" href="javascript:fn_searchJobFair();" name="search" id="search"><span>검색</span></a>
+								</span>
+							</p>
+							<div class="divComGrpCodList">
+								<table class="col">
+									<caption>caption</caption>
+									<colgroup>
+										<col width="7%">
+										<col width="63%">
+										<col width="10%">
+										<col width="10%">
+										<col width="10%">
+									</colgroup>
+									<thead>
+										<tr>
+											<th scope="col">번호</th>
+											<th scope="col">박람회명</th>
+											<th scope="col">지역</th>
+											<th scope="col">시작일</th>
+											<th scope="col">종료일</th>
+										</tr>
+									</thead>
+									<tbody id="listJobFair"></tbody>
+								</table>
+							</div>
+
+							<div class="paging_area" id="propStatPagination"></div>
+
+						</div> <!--// content -->
+
+						<h3 class="hidden">풋터 영역</h3> 
+						<jsp:include page="/WEB-INF/view/common/footer.jsp"></jsp:include>
+					</li>
+				</ul>
+			</div>
+		</div>
+		
+		<div id="JobFairReg" class="layerPop layerType2" style="width: 600px;">
+		
+		<input type="hidden" name="fair_no" id="fair_no2" value="">
+		<input type="hidden" name="loginId" id="loginId2" value="">
+		<input type="hidden" name="exist_yn" id="exist_yn" value="">
+		
+			<dl>
+				<dt>
+					<strong>박람회  상세 보기</strong>
+				</dt>
+				<dd class="content">
+               <!-- s : 여기에 내용입력 -->
+               <table class="row">
+                  <caption>caption</caption>
+                  <colgroup>
+                    <col width="120px">
+					<col width="120px">
+                  </colgroup>
+                  <tbody>
+                  
+                     <!-- 박람회 정보 -->
+                     <tr>
+                        <th colspan="3" style="background-color: #fff;">박람회 정보</th>
+                     </tr>
+                     <tr>
+                        <th scope="row">박람회 명 <span class="font_red">*</span></th>
+                        <td colspan="2"><input type="text" class="inputTxt p100"
+                        name="fair_title" id="fair_title2" readonly/></td>
+                     </tr>
+                     <tr>
+                        <th scope="row">주소 <span class="font_red">*</span></th>
+                        <td colspan="2"><input type="text" class="inputTxt p100"
+                        name="address" id="address" readonly/></td>
+                     </tr>
+                     <tr>
+                        <th scope="row">박람회 진행 일자<span class="font_red">*</span></th>
+                        <td colspan="2"><input type="text" class="inputTxt p100"
+                        name="Date" id="Date" /></td>
+                     </tr>
+                     
+                      <!-- 박람회 담당자 정보 -->
+                     <tr>
+                        <th colspan="3" style="background-color: #fff;">박람회 담당자 정보</th>
+                     </tr>
+                   	 <tr>
+						<th scope="row">담당자 <span class="font_red">*</span></th>
+						<td><input type="text" class="inputTxt p100"
+							name="name" id="name" readonly/></td>
+					 </tr>
+					 <tr>
+					 	<th scope="row">연락처 <span class="font_red">*</span></th>
+						<td><input type="text" class="inputTxt p100"
+							name="user_phone" id="user_phone" readonly /></td>
+					 </tr>
+                     <tr>
+                        <th scope="row">e-mail <span class="font_red">*</span></th>
+                        <td colspan="2"><input type="text" class="inputTxt p100"
+                        name="user_email" id="user_email" /></td>
+                     </tr>
+                     <tr>
+								<th scope="row">팜플렛 <span class="font_red">*</span></th>
+								<td colspan="2"><div id="fileview"></div></td>
+							</tr>
+                     
+                 </table>
+                 <div class="btn_areaC mt30">
+               	 	<a class="btnType blue" href="javascript:fn_JobFairSave();" name="offer" id="offer"><span>신청하기</span></a>
+                  	<a href="" class="btnType gray" id="btnClosefile" name="btn"><span>닫기</span></a>
+               	</div>
+                </dd>
+              </dl>
+				<a href="" class="closePop"><span class="hidden">닫기</span></a>
+		</div>
+		
+	</form>
+</body>
+</html>

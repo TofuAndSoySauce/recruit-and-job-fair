@@ -1,0 +1,38 @@
+package kr.happyjob.study.resume.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+public class ResumeSubmitModel {
+
+	private int no;
+	private String companyName;
+	private String adTitle;
+	private String dueDate;
+	private String submitDate;
+	private String memo;
+	private String status;
+	private String regDate;
+	private int adNo;
+	private String daysLeft;
+	
+	private int resumeNo;
+	private String resumeTitle;
+	private String loginId;
+	private String interviewDate;
+	private String experience;
+	private String salary;
+	private String isRead;
+	private String adStatus;
+	private String submitStatus;
+	private String interviewYn;
+	
+	private int totalCount;
+	
+}

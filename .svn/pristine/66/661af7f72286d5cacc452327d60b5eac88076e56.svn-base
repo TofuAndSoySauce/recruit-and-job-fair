@@ -1,0 +1,11 @@
+package kr.happyjob.study.fair.dao;
+
+import java.util.Map;
+
+public interface FairCreationDao {
+	public int fairSave(Map<String, Object> paramMap) throws Exception;
+	
+	public void fileNewSave(Map<String, Object> paramMap)throws Exception;
+	
+	public int fileCdCheck(Map<String, Object> paramMap)throws Exception;
+}

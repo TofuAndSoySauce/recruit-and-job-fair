@@ -1,0 +1,25 @@
+package kr.happyjob.study.fair.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import kr.happyjob.study.fair.model.JobFairBoothApplicationModel;
+
+public interface JobFairBoothApplicationDao {
+
+	List<JobFairBoothApplicationModel> jobFairBoothApplicationList(Map<String, Object> paramMap);
+
+	int countJobFairBoothApplicationList(Map<String, Object> paramMap);
+
+	//취업박람회 부스신청페이지 상세보기
+	JobFairBoothApplicationModel jobFairBoothApplicationDetail(Map<String, Object> paramMap);
+
+	int jobFairBoothApplicationSave(Map<String, Object> paramMap);
+
+	List<Map<String, Object> > jobFairBoothApplicationExistBooth(Map<String, Object> paramMap);
+
+	List<Map<String, Object>> regionSelect();
+	
+	List<Map<String, Object>> boothTypeSelect();
+
+}

@@ -1,0 +1,48 @@
+@charset "UTF-8";
+
+td.acceptButtonAreaTd {
+  display: flex;
+  justify-content: center;
+}
+
+button.acceptButtonArea {
+  width: 100px;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+td.acceptButtonAreaTd button.proposalButton {
+  width: 50px;
+  color: white;
+  height: 30px;
+  line-height: 30px;
+  font-size: 15px;
+  cursor: pointer;
+  outline: none;
+  border: none;
+}
+
+button.acceptProposalButton {
+  background: #2e9acc;
+}
+
+button.refuseProposalButton {
+  background: indianred;
+}
+
+div.updateParamArea {
+  display: none;
+}
+
+button.acceptanceButton {
+  background: #2e9acc;
+}
+
+button.proposalCloseButton {
+  background: indianred;
+}
+
+input.proposalMemo {
+  height: 28px;
+}

@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.userinfo.dao.MailDao">
+
+	<!-- 보낸 메일함 조회
+	 join시 기준 테이블에서 기본키가 2개일 시 기본키 2개 모두 비교 테이블의 외래키랑 잡아야 합니다. -->
+	<select id="mailSendList" resultType="kr.happyjob.study.userinfo.model.MailModel">
+	
+		select tm.mail_no, ui.name as name , tm.mail_title, tm.read_date, td1.detail_name, tm.is_delete, tm.reg_date
+		from tb_mail tm join tb_userinfo ui on tm.mail_other = ui.loginID JOIN tb_detail_code td1 
+		ON td1.detail_code = tm.read_yn and td1.group_code = 'read_yn'
+		where
+			tm.is_delete = 2
+			and tm.loginID = #{loginId}
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tm.mail_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and tm.reg_date <![CDATA[>=]]>
+				#{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and tm.reg_date <![CDATA[<=]]>
+				#{srcedate}
+			</if>
+					
+		order by
+		tm.mail_no desc
+		limit #{pageindex}, #{pageSize}
+		
+	</select>
+	
+	<!-- 보낸 메일함 총 데이터 구하는  함수 -->
+	<select id="countSendMailList" resultType="int">
+	
+		select count(1) as tot_cnt
+		from tb_mail tm
+		where
+			tm.is_delete = 2
+			and tm.loginID = #{loginId}
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tm.mail_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and tm.reg_date <![CDATA[>=]]>
+				#{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and tm.reg_date <![CDATA[<=]]>
+				#{srcedate}
+			</if>
+	
+	</select>
+	
+	<!-- 보낸 메일함 검색어가 있는 상태에서 페이지네이션을 클릭시 아무런 변화가 없어야 한다 (검색이 안되야 한다) -->
+	
+	<select id="noChangeSendMail" resultType="kr.happyjob.study.userinfo.model.MailModel">
+	
+		select tm.mail_no, ui.name as name , tm.mail_title, tm.read_date, td1.detail_name, tm.is_delete, tm.reg_date
+		from tb_mail tm join tb_userinfo ui on tm.mail_other = ui.loginID JOIN tb_detail_code td1 
+		ON td1.detail_code = tm.read_yn and td1.group_code = 'read_yn'
+		where
+			tm.is_delete = 2
+			and tm.loginID = #{loginId}
+			
+		order by
+		tm.mail_no desc
+		limit #{pageindex}, #{pageSize}
+		
+	</select>
+	
+	<!-- 보낸 메일함 검색어가 있는 상태에서 페이지네이션을 클릭시 아무런 변화가 없어야 한다 (검색이 안되야 한다) 총 데이터 구하는 함수 -->
+	
+	<select id="noChangeCountSendMailList" resultType="int">
+	
+		select count(1) as tot_cnt
+		from tb_mail tm
+		where
+			tm.is_delete = 2
+			and tm.loginID = #{loginId}
+	
+	</select>
+	
+	<!-- 받은 메일함 조회
+	 join시 기준 테이블에서 기본키가 2개일 시 기본키 2개 모두 비교 테이블의 외래키랑 잡아야 합니다. -->
+	<select id="receMailList" resultType="kr.happyjob.study.userinfo.model.MailModel">
+		
+		select tm.mail_no, ui.name as name , tm.mail_title, tm.is_delete, tm.reg_date
+		from tb_mail tm join tb_userinfo ui on tm.loginID = ui.loginID
+		where
+			tm.is_delete = 2
+			and tm.mail_other = #{loginId}
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tm.mail_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and tm.reg_date <![CDATA[>=]]>
+				#{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and tm.reg_date <![CDATA[<=]]>
+				#{srcedate}
+			</if>
+			
+		order by
+		tm.mail_no desc
+		limit #{pageindex}, #{pageSize}
+		
+	</select>
+	
+	<!-- 받은 메일함 총 데이터 구하는  함수 -->
+	<select id="countReceMailList" resultType="int">
+	
+		select count(1) as tot_cnt
+		from tb_mail tm
+		where
+			tm.is_delete = 2
+			and tm.mail_other = #{loginId}
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tm.mail_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and tm.reg_date <![CDATA[>=]]>
+				#{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and tm.reg_date <![CDATA[<=]]>
+				#{srcedate}
+			</if>
+	
+	</select>
+
+	<!-- 메일 보내기 -->
+	<insert id="sendMail">
+		<selectKey resultType="int" keyProperty="mailno" order="BEFORE"> <!-- 기본키가 int 타입일때 자동 증가 함수 -->
+			select ifnull(max(mail_no), 0) + 1 from tb_mail
+		</selectKey>
+	
+		insert into tb_mail(
+			mail_no,
+			mail_title,
+			mail_content,
+			read_yn,
+			reg_date,
+			is_delete,
+			loginID,
+			mail_other
+		)
+		values(
+			#{mailno},
+			#{mail_title},
+			#{mail_content},
+			2,
+			date_format(Now(), '%Y-%m-%d'),
+			2,
+			#{loginId},
+			#{mailother}
+		)
+	
+	</insert>
+	
+	<!-- 파일 코드 생성 -->
+	<select id="filecdcheck" resultType="int">
+		select
+			ifnull(max(file_cd),0) + 1
+		FROM tb_file
+	</select>
+	
+	<!-- 파일 저장 -->
+	<insert id="filenewsave">
+		insert into tb_file
+		(
+		file_cd
+		,file_type
+		,file_size
+		,file_name
+		,file_nadd
+		,file_madd
+		) values (
+		#{filecd}
+		,#{file_type}
+		,#{file_size}
+		,#{file_name}
+		,#{file_nadd}
+		,#{file_madd}
+		)
+	</insert>
+	
+	<!-- 공지사항 등록 -->
+	<insert id="mailfilenewsend">
+	
+		<selectKey resultType="int" keyProperty="mailno" order="BEFORE"> <!-- 기본키가 int 타입일때 자동 증가 함수 -->
+			select ifnull(max(mail_no), 0) + 1 from tb_mail
+		</selectKey>
+		
+		insert into tb_mail(
+			mail_no,
+			mail_title,
+			mail_content,
+			read_yn,
+			reg_date,
+			is_delete,
+			loginID,
+			mail_other,
+			file_cd
+		) values (
+			#{mailno},
+			#{mail_title},
+			#{mail_content},
+			2,
+			date_format(Now(), '%Y-%m-%d'),
+			2,
+			#{loginId},
+			#{mailother},
+			#{filecd}
+		)
+	</insert>
+	
+	<!-- 보낸 메일함 상세보기 함수 (제목을 클릭시) -->
+	
+	<select id="sendMailDetail" resultType="kr.happyjob.study.userinfo.model.MailModel">
+		select tm.mail_no, ui.name as name, tm.mail_title, tm.mail_content, tm.file_cd, tf.file_name , tf.file_size , tf.file_nadd, tf.file_madd
+		from tb_mail tm join tb_userinfo ui on tm.mail_other = ui.loginID left join tb_file tf on tm.file_cd = tf.file_cd
+		where tm.mail_no = #{mailno}
+	</select>
+	
+	<!-- 받은 메일함 상세보기 함수 (제목을 클릭시) -->
+	
+	<select id="Recemaildetail" resultType="kr.happyjob.study.userinfo.model.MailModel">
+		select tm.mail_no, ui.name as name, tm.mail_title, tm.mail_content, tm.file_cd, tf.file_name , tf.file_size , tf.file_nadd, tf.file_madd
+		from tb_mail tm join tb_userinfo ui on tm.loginID = ui.loginID left join tb_file tf on tm.file_cd = tf.file_cd
+		where tm.mail_no = #{mailno}
+	</select>
+	
+	<!-- 메일함 업데이트 함수 (읽은 날짜, 수신여부) -->
+	<update id="mailUpdate">
+	
+		update tb_mail
+		set read_date = date_format(Now(), '%Y-%m-%d'),
+		    read_yn = 1,
+		    update_date = date_format(Now(), '%Y-%m-%d')
+		where mail_no = #{mailno}
+	
+	</update>
+	
+	<!-- 메일함 업데이트 함수 (읽은 날짜, 수신여부) -->
+	<update id="deleteMail">
+	
+		update tb_mail
+		set is_delete = 1, update_date = date_format(Now(), '%Y-%m-%d')
+		where mail_no = #{mailno}
+	
+	</update>
+
+</mapper>

@@ -1,0 +1,128 @@
+package kr.happyjob.study.like.model;
+
+public class LikeResponseDto {
+
+	public static class LikeList {
+
+		private int adNo;
+		private String title;
+		private String companyName;
+		private String experience;
+		private String position;
+		private String salary;
+		private String dueDate;
+		private String daysLeft;
+		private boolean applied;
+		private int totalCount;
+		private boolean isDeleted;
+
+		public LikeList(int adNo, String title, String companyName, String experience, String position, String salary,
+				String dueDate, String daysLeft, boolean applied, int totalCount, boolean isDeleted) {
+			super();
+			this.adNo = adNo;
+			this.title = title;
+			this.companyName = companyName;
+			this.experience = experience;
+			this.position = position;
+			this.salary = salary;
+			this.dueDate = dueDate;
+			this.daysLeft = daysLeft;
+			this.applied = applied;
+			this.totalCount = totalCount;
+			this.isDeleted = isDeleted;
+		}
+
+		public LikeList() {
+			super();
+		}
+
+		public int getAdNo() {
+			return adNo;
+		}
+
+		public void setAdNo(int adNo) {
+			this.adNo = adNo;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
+		}
+
+		public String getCompanyName() {
+			return companyName;
+		}
+
+		public void setCompanyName(String companyName) {
+			this.companyName = companyName;
+		}
+
+		public String getExperience() {
+			return experience;
+		}
+
+		public void setExperience(String experience) {
+			this.experience = experience;
+		}
+
+		public String getPosition() {
+			return position;
+		}
+
+		public void setPosition(String position) {
+			this.position = position;
+		}
+
+		public String getSalary() {
+			return salary;
+		}
+
+		public void setSalary(String salary) {
+			this.salary = salary;
+		}
+
+		public String getDueDate() {
+			return dueDate;
+		}
+
+		public void setDueDate(String dueDate) {
+			this.dueDate = dueDate;
+		}
+
+		public String getDaysLeft() {
+			return daysLeft;
+		}
+
+		public void setDaysLeft(String daysLeft) {
+			this.daysLeft = daysLeft;
+		}
+
+		public boolean isApplied() {
+			return applied;
+		}
+
+		public void setApplied(boolean applied) {
+			this.applied = applied;
+		}
+
+		public int getTotalCount() {
+			return totalCount;
+		}
+
+		public void setTotalCount(int totalCount) {
+			this.totalCount = totalCount;
+		}
+		
+		public boolean isDeleted() {
+			return isDeleted;
+		}
+
+		public void setDeleted(boolean isDeleted) {
+			this.isDeleted = isDeleted;
+		}
+
+	}
+}

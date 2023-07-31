@@ -1,0 +1,78 @@
+package kr.happyjob.study.like.controller;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.happyjob.study.like.model.LikeQueryParam;
+import kr.happyjob.study.like.model.LikeRequestDto.Patch;
+import kr.happyjob.study.like.model.LikeRequestDto.Post;
+import kr.happyjob.study.like.model.LikeResponseDto.LikeList;
+import kr.happyjob.study.like.service.LikeService;
+
+@RequestMapping("/like")
+@Controller
+public class LikeController {
+
+	@Autowired
+	LikeService likeService;
+	
+	@GetMapping("/list.do")
+	public String getList(HttpSession session, LikeQueryParam queryParam, Model model){
+		
+		String loginId = (String) session.getAttribute("loginId");
+		if (queryParam.getPageSize() == 0) queryParam.setDefaultPage();
+		queryParam.setLoginId(loginId);
+		queryParam.setPageIndex();
+		List<LikeList> list = likeService.getList(queryParam);
+		
+		if(!list.isEmpty()) {
+			model.addAttribute("likeTotalCount", list.get(0).getTotalCount());
+		}
+		model.addAttribute("likeList", list);
+		
+		return "/like/likeList";
+		
+	}
+	
+	@GetMapping("/index.do")
+	public String getLikeMain(){
+		return "/like/likeMain";
+	}
+	
+	@ResponseBody
+	@PostMapping(value ="/post.do", consumes ="application/json")
+	public ResponseEntity<String> save(HttpSession session, @RequestBody Post post, HttpServletRequest request) {
+		
+		String redirectPageUrl = post.getRedirectPageUrl();
+		// post.setLoginId((String) session.getAttribute("loginId"));
+		likeService.save(post);
+		
+		return new ResponseEntity<>(redirectPageUrl, HttpStatus.CREATED);
+		
+	}
+	
+	@ResponseBody
+	@PatchMapping(value="/update.do", consumes ="application/json")
+	public ResponseEntity<String> patch(HttpSession session, @RequestBody Patch patch) {
+		String redirectPageUrl = patch.getRedirectPageUrl();
+		
+		likeService.update(patch);
+		
+		return new ResponseEntity<>(redirectPageUrl, HttpStatus.OK);
+	}
+	
+}

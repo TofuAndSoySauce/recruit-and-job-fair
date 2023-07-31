@@ -1,0 +1,36 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+
+<c:forEach var="resumeModel" items="${resumeList }">
+	<tr>
+		<td>
+			<a href="javascript:openDetail(${resumeModel.resume_no });">${resumeModel.resume_title }</a>
+		</td>
+		<td>
+			<a href="javascript:initResumeHistory(${resumeModel.resume_no });" style="border:1px solid #1C97D1; background-color:#3CB3EB; color:#fff; padding:4px 5px">열람기업 보기</a>
+		</td>
+		<td>
+			<c:if test="${resumeModel.resume_hireType == '1' }">정규직</c:if>
+			<c:if test="${resumeModel.resume_hireType == '2' }">계약직</c:if>
+			<c:if test="${resumeModel.resume_hireType == '3' }">인턴</c:if>
+		</td>
+		<td>
+			<c:if test="${resumeModel.resume_salary == '1' }">3000 ~ 4000 만원</c:if>
+			<c:if test="${resumeModel.resume_salary == '2' }">4000 ~ 5000 만원</c:if>
+			<c:if test="${resumeModel.resume_salary == '3' }">5000 ~ 6000 만원</c:if>
+			<c:if test="${resumeModel.resume_salary == '4' }">6000 만원 이상</c:if>
+		</td>
+		<td>
+			<c:if test="${resumeModel.resume_postion == '1' }">개발자</c:if>
+			<c:if test="${resumeModel.resume_postion == '2' }">생산관리</c:if>
+			<c:if test="${resumeModel.resume_postion == '3' }">재무회계</c:if>
+			<c:if test="${resumeModel.resume_postion == '4' }">노무</c:if>
+			<c:if test="${resumeModel.resume_postion == '5' }">영업</c:if>
+		</td>
+		<td>${resumeModel.reg_date }</td>
+	</tr>
+</c:forEach>
+
+<input type="hidden" id="totcnt" name="totcnt" value="${countResumeList}"/>

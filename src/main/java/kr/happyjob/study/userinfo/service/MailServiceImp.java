@@ -1,0 +1,179 @@
+package kr.happyjob.study.userinfo.service;
+
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.happyjob.study.userinfo.dao.MailDao;
+import kr.happyjob.study.userinfo.model.MailModel;
+
+
+@Service // 이 파일이 Service 문서임을 입증하는 어노테이션임
+public class MailServiceImp implements MailService{
+	
+	@Autowired
+	MailDao mailDao;
+	
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+		
+	@Value("${fileUpload.noticePath}")
+	private String noticePath;
+		
+	@Value("${fileUpload.rootPath}")
+	private String rootPath;
+		
+	@Value("${fileUpload.logicalrootPath}")
+	private String logicalrootPath;
+
+	// 메일 보내기 함수
+	@Override
+	public int sendMailFile(Map<String, Object> paramMap, HttpServletRequest request, List<MultipartFile> multiFile) throws Exception {
+		
+		// 파일저장
+		String itemFilePath = noticePath + File.separator; // 업로드 실제 경로 조립
+															// (무나열생성)
+		// 실제 업로드 처리
+
+		logger.info("   - multiFile.size() : " + multiFile.get(0).getOriginalFilename());
+		
+		// 파일이 없는데 추가하는 경우
+		if (multiFile.get(0).getOriginalFilename() == null || multiFile.get(0).getOriginalFilename() == "")  {
+			
+			return mailDao.sendMail(paramMap); // 파일 없이 메일을 보내는 함수
+			
+		} else {
+			int filec = mailDao.filecdcheck(paramMap);
+			paramMap.put("filec", filec);
+			paramMap.put("filecd", filec);
+
+			for (int i = 0; i < multiFile.size(); i++) {
+				
+				String savefilename = this.uploadFile(rootPath + File.separator + itemFilePath,  multiFile.get(i).getOriginalFilename(), multiFile.get(i).getBytes());
+
+				paramMap.put("file_name", multiFile.get(i).getOriginalFilename());
+				paramMap.put("file_size", multiFile.get(i).getSize());
+				paramMap.put("file_madd",
+						rootPath + File.separator + itemFilePath + savefilename);
+				paramMap.put("file_type", multiFile.get(i).getOriginalFilename()
+						.substring(multiFile.get(i).getOriginalFilename().lastIndexOf(".") + 1));
+
+				if (multiFile.get(i).getOriginalFilename() != null
+						|| !multiFile.get(i).getOriginalFilename().equals("")) {
+					paramMap.put("file_nadd",
+							logicalrootPath + File.separator + itemFilePath + savefilename);
+				} else {
+					paramMap.put("file_nadd", null);
+				}
+
+				logger.info("   - paramMapImpl : " + paramMap);
+
+				File finalsave = new File((String) paramMap.get("file_madd"));
+				multiFile.get(i).transferTo(finalsave);
+
+				mailDao.filenewsave(paramMap); // 파일을 새로 추가해서 저장하는 함수
+
+			}
+
+			logger.info("   - Dao paramMap : " + paramMap);
+
+			return mailDao.mailfilenewsend(paramMap); // 메일 보내기
+		}
+		
+	}
+	
+	/** 파일 중복명 제거 */
+	private String uploadFile(String fullpath, String originalName, byte[] fileData) throws Exception{
+		UUID uuid = UUID.randomUUID();
+		String savedName = uuid.toString()+"_"+originalName;
+		
+		File target = new File(fullpath, savedName);
+		
+		FileCopyUtils.copy(fileData, target);
+		
+		return savedName;
+
+	}
+
+	// 보낸 메일함 조회 함수
+	@Override
+	public List<MailModel> sendMailList(Map<String, Object> paramMap) throws Exception {
+		
+		return mailDao.mailSendList(paramMap);
+		
+	}
+
+	@Override
+	public int countSendMailList(Map<String, Object> paramMap) throws Exception {
+		
+		return mailDao.countSendMailList(paramMap);
+		
+	}
+
+	@Override
+	public MailModel sendMailDetail(Map<String, Object> paramMap) throws Exception {
+		
+		return mailDao.sendMailDetail(paramMap);
+		
+	}
+
+	@Override
+	public int countReceMailList(Map<String, Object> paramMap) throws Exception {
+		// TODO Auto-generated method stub
+		return mailDao.countReceMailList(paramMap);
+	}
+
+	@Override
+	public List<MailModel> receMailList(Map<String, Object> paramMap) throws Exception {
+		// TODO Auto-generated method stub
+		return mailDao.receMailList(paramMap);
+	}
+
+	@Override
+	public MailModel Recemaildetail(Map<String, Object> paramMap) throws Exception {
+		// TODO Auto-generated method stub
+		return mailDao.Recemaildetail(paramMap);
+	}
+
+	@Override
+	public int mailUpdate(Map<String, Object> paramMap) throws Exception {
+		// TODO Auto-generated method stub
+		return mailDao.mailUpdate(paramMap);
+	}
+
+	@Override
+	public int deleteMail(Map<String, Object> paramMap) throws Exception {
+		// TODO Auto-generated method stub
+		return mailDao.deleteMail(paramMap);
+	}
+
+	@Override
+	public List<MailModel> noChangeSendMail(Map<String, Object> paramMap) throws Exception {
+		// TODO Auto-generated method stub
+		return mailDao.noChangeSendMail(paramMap);
+	}
+
+	@Override
+	public int noChangeCountSendMailList(Map<String, Object> paramMap) throws Exception {
+		// TODO Auto-generated method stub
+		return mailDao.noChangeCountSendMailList(paramMap);
+	}
+
+	@Override
+	public int checkId(Map<String, Object> paramMap) {
+		// TODO Auto-generated method stub
+		return mailDao.checkId(paramMap);
+	}
+
+}

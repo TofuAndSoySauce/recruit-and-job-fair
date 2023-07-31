@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.ad.dao.AdDao">
+
+	<!-- 채용공고 리스트 불러오기 -->
+	<select id="adList" resultType="kr.happyjob.study.ad.model.AdModel">
+		select
+		 	  ad_no
+			, ad_title
+			, ad_education
+			, ad_type
+			, ad_salary
+			, ad_experience
+			, ad_date
+			, ad_yn
+			, ad_status
+			, reg_date
+		from
+	   		tb_ad 
+		<where>
+				is_delete = 2
+			and loginId = #{loginId}
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and ad_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and reg_date <![CDATA[>=]]>	#{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and reg_date <![CDATA[<=]]> #{srcedate}
+			</if>
+		</where>
+		order by
+			ad_no desc
+ 		limit 
+			#{pageindex}, #{pageSize} 
+	</select>
+
+	<!-- 채용공고 인서트 (파일 없음) -->
+		<insert id="adNewSave">
+		<selectKey resultType="int" keyProperty="ad_no" order="BEFORE">
+			select ifnull(max(ad_no), 0) + 1 from tb_ad
+		</selectKey>
+		insert into tb_ad (
+			  ad_no
+			, ad_title
+			, ad_content
+			, ad_type
+			, ad_location
+			, ad_position
+			, ad_role
+			, ad_salary
+			, ad_experience
+			, ad_education
+			, ad_perference
+			, ad_date
+			, ad_yn
+			, ad_status
+			, reg_date
+			, is_delete
+			, loginID
+		)
+		values (
+			  #{ad_no}
+			, #{ad_title}
+			, #{ad_content}
+			, #{ad_type}
+			, #{ad_location}
+			, #{ad_position}
+			, #{ad_role}
+			, #{ad_salary}
+			, #{ad_experience}
+			, #{ad_education}
+			, #{ad_perference}
+			, #{ad_date}
+			, 1
+			, 1
+			, #{reg_date}
+			, 2
+			, #{loginID}
+		)
+		
+	</insert>
+	
+	
+	<!-- 상세보기 초기화 (기업정보 + 채용공고) -->
+	<select id="adDetail" resultType="hashmap">
+		select
+			  ad.ad_no
+			, ad.ad_title
+			, ad.ad_content
+			, ad.ad_type
+			, ad.ad_location
+			, ad.ad_position
+			, ad.ad_role
+			, ad.ad_salary
+			, ad.ad_experience
+			, ad.ad_education
+			, ad.ad_perference
+			, ad.ad_date
+			, ad.ad_yn
+			, ad.ad_status
+			, ad.reg_date
+			, ad.update_date
+			, ad.is_delete
+			, ad.loginID
+		 	, ad.file_cd
+			, ui.name
+			, ui.user_phone
+			, ui.user_birthday
+			, ui.user_company_size
+			, ui.user_email
+			, ui.user_company_category
+			, ui.user_zipcode
+			, ui.user_address1
+			, ui.user_address2
+ 			, fe.file_name
+			, fe.file_size
+			, fe.file_nadd
+			, fe.file_madd 
+		from
+				 tb_ad ad
+	   		join tb_userinfo ui
+	   		on   ad.loginID = ui.loginID
+ 	   		left join tb_file fe
+	   		on   ad.file_cd = fe.file_cd 
+		where
+			ad_no = #{ad_no}
+	</select>
+	
+	
+		
+	<!-- 상세보기 초기화 (인적사항) -->
+	<select id="userDetail" resultType="hashmap">
+		select
+			  name
+			, user_phone
+			, user_birthday
+			, user_company_size
+			, user_email
+			, user_company_category
+			, user_zipcode
+			, user_address1
+			, user_address2
+		from
+			tb_userinfo
+		where
+			loginID = #{loginID}
+	
+	</select>
+	
+	
+	<!-- 채용공고 리스트 카운트 -->
+	<select id="countAdList" resultType="int">
+		select
+			count(1) as tot_cnt
+		from
+			tb_ad
+		<where>
+				is_delete = 2
+			and loginID = #{loginId}
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and ad_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and reg_date <![CDATA[>=]]> #{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and reg_date <![CDATA[<=]]> #{srcedate}
+			</if>
+		</where>
+	</select>
+	
+	
+	<!-- 채용공고 업데이트 (파일 없음) -->
+	<update id="adUpdate">
+		update 
+			tb_ad
+		set
+			  ad_title = #{ad_title}
+ 			, ad_content = #{ad_content}
+			, ad_type = #{ad_type}
+			, ad_location = #{ad_location}
+			, ad_position = #{ad_position}
+			, ad_role = #{ad_role}
+			, ad_salary = #{ad_salary}
+			, ad_experience = #{ad_experience}
+			, ad_education = #{ad_education}
+			, ad_perference = #{ad_perference}
+			, ad_date = #{ad_date}
+			, update_date = #{update_date} 
+		where
+			ad_no = #{ad_no}
+	</update>
+
+
+	<!-- 채용공고 삭제 -->
+	<update id="adDelete">
+		update
+			tb_ad
+		set
+			is_delete = 1
+		where
+			ad_no = #{ad_no}
+	</update>
+	
+	<!-- 파일 코드 생성 -->
+	<select id="fileCdCheck" resultType="int">
+		select
+			ifnull(max(file_cd),0) + 1
+		FROM tb_file
+	</select>
+	
+
+	<!-- 파일 저장 -->
+	<insert id="fileNewSave">
+		insert into tb_file (
+		 	 file_cd
+			,file_type
+			,file_size
+			,file_name
+			,file_nadd
+			,file_madd
+		) 
+		values (
+		 	 #{filecd}
+			,#{file_type}
+			,#{file_size}
+			,#{file_name}
+			,#{file_nadd}
+			,#{file_madd}
+		)
+	</insert>	
+	
+
+	<!-- 채용공고 인서트 (파일 있음) -->
+	<insert id="adNewSaveFile">
+		<selectKey resultType="int" keyProperty="ad_no" order="BEFORE">
+			select ifnull(max(ad_no), 0) + 1 from tb_ad
+		</selectKey>
+		insert into tb_ad (
+			  ad_no
+			, ad_title
+			, ad_content
+			, ad_type
+			, ad_location
+			, ad_position
+			, ad_role
+			, ad_salary
+			, ad_experience
+			, ad_education
+			, ad_perference
+			, ad_date
+			, ad_yn
+			, ad_status
+			, reg_date
+			, is_delete
+			, loginID
+			, file_cd
+		)
+		values (
+			  #{ad_no}
+			, #{ad_title}
+			, #{ad_content}
+			, #{ad_type}
+			, #{ad_location}
+			, #{ad_position}
+			, #{ad_role}
+			, #{ad_salary}
+			, #{ad_experience}
+			, #{ad_education}
+			, #{ad_perference}
+			, #{ad_date}
+			, 1
+			, 1
+			, #{reg_date}
+			, 2
+			, #{loginID}
+			, #{filecd}
+		)
+	</insert>
+	
+	
+	<!-- 채용공고 업데이트 (파일 있음) -->
+	<update id="adUpdateFile">
+		update 
+			tb_ad
+		set
+			  ad_title = #{ad_title}
+ 			, ad_content = #{ad_content}
+			, ad_type = #{ad_type}
+			, ad_location = #{ad_location}
+			, ad_position = #{ad_position}
+			, ad_role = #{ad_role}
+			, ad_salary = #{ad_salary}
+			, ad_experience = #{ad_experience}
+			, ad_education = #{ad_education}
+			, ad_perference = #{ad_perference}
+			, ad_date = #{ad_date}
+			, update_date = #{update_date} 
+			, file_cd = #{filecd}
+		where
+			ad_no = #{ad_no}
+	</update>
+	
+	
+	<!-- 채용공고 업데이트시 기존의 파일이 존재하는 경우 -->
+	<update id="fileUpdate">
+		update tb_file
+			set
+		 		file_type = #{file_type}
+		,		file_size = #{file_size}
+		,		file_name = #{file_name}
+		,		file_nadd = #{file_nadd}
+		,		file_madd = #{file_madd}
+		where	file_cd = #{filecd}
+	</update>
+	
+	
+	<!-- 채용공고 업데이트시 기존의 파일이 없는 경우 -->
+	<insert id="fileUpdateNewSave">
+		insert into tb_file
+		(
+		file_cd
+		,file_type
+		,file_size
+		,file_name
+		,file_nadd
+		,file_madd
+		) values (
+		#{filecd}
+		,#{file_type}
+		,#{file_size}
+		,#{file_name}
+		,#{file_nadd}
+		,#{file_madd}
+		)
+	</insert>
+	
+	<!-- 채용공고 재시작  -->
+	<update id="adRestart">
+		update
+			tb_ad
+		set
+			ad_status = 1
+		where
+			ad_no = #{ad_no}
+	</update>
+	
+	<!-- 채용공고 공고취소  -->
+	<update id="adCancel">
+		update
+			tb_ad
+		set
+			ad_status = 2
+		where
+			ad_no = #{ad_no}
+	</update>
+	
+	
+	<!-- 채용공고 모집완료  -->
+	<update id="adComplete">
+		update
+			tb_ad
+		set
+			ad_status = 3
+		where
+			ad_no = #{ad_no}
+	</update>
+
+	
+</mapper>

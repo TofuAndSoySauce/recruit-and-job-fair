@@ -1,0 +1,36 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+
+<c:forEach items="${ProposStatus}" var="list2">
+
+	<c:if test="${list2.is_delete eq 2}">
+	
+		<tr>
+			
+			<td>${list2.proposal_no}</td>
+			<td>${list2.experience}</td>
+			<td>${list2.name}</td>
+			<td>
+				<c:choose>
+					<c:when test="${list2.proposal_accept eq 1}">
+						<a href="javascript:fn_jobCancle(${list2.proposal_no})" class="btnType blue" id="btnSavefile" name="btn"><span>제안 취소</span></a>
+					</c:when>
+					<c:when test="${list2.proposal_accept eq 2}">
+						<span>반려</span>
+					</c:when>
+					<c:when test="${list2.proposal_accept eq 3}">
+						<span>승인</span>
+					</c:when>
+				</c:choose>
+			</td>
+			
+		</tr>
+	
+	</c:if>
+	
+</c:forEach>
+
+<!-- 페이지 네이션을 위한 데이터의 총 건수 -->
+<input type="hidden" id="totcnt2" name="totcnt2" value="${countProposStatus}"/>

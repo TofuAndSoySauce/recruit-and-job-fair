@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.fair.dao.JobFairBoothMgtDao">
+	<select id="jobFairBoothMgtList"
+		resultType="kr.happyjob.study.fair.model.JobFairBoothMgtModel">
+		SELECT tfa.loginID,
+			tfj.join_id AS jid,
+			tfa.fair_no AS id,  
+			tfa.fair_title AS title,
+			ifnull(tfa.fair_startdate, '-') AS startDate,
+			ifnull(tfa.fair_enddate, '-') AS endDate,
+			ifnull(tfa.fair_address1, '-') AS address1,
+			ifnull(tfa.fair_name, '-') AS name,
+			ifnull(tfj.is_delete, '-') AS isDelete,
+			ifnull(tdc.detail_name, '-') AS isDeleteName,
+			ifnull(ui.user_phone, '-') AS phone
+		FROM tb_fair tfa
+		LEFT OUTER JOIN tb_userinfo ui ON tfa.loginID = ui.loginID
+		 LEFT OUTER JOIN tb_fair_join tfj ON tfa.fair_no = tfj.fair_no
+		 LEFT OUTER JOIN tb_detail_code tdc ON tdc.group_code='ad_yn' AND tfj.is_delete = tdc.detail_code
+		 
+		WHERE tfa.is_delete = 2 AND tfj.loginID = #{loginId}
+		order by
+		tfa.fair_no desc
+		limit
+		#{pageindex}, #{pageSize}
+	</select>
+	<select id="countJobFairBoothMgtList" resultType="int">
+		SELECT count(1) AS tot_cnt
+		FROM tb_fair_join tfj
+		WHERE tfj.loginID = #{loginId}
+		<!-- <if test="(srctitle != null) and ( !''.equals(srctitle) )"> and notice_title 
+			Like CONCAT('%', #{srctitle}, '%') </if> <if test="(srcsdate != null) and 
+			( !''.equals(srcsdate) )"> and reg_date <![CDATA[>=]]> #{srcsdate} </if> 
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )"> and reg_date 
+			<![CDATA[<=]]> #{srcedate} </if> -->
+	</select>
+	<select id="jobFairBoothMgtDetail"
+		resultType="kr.happyjob.study.fair.model.JobFairBoothMgtModel">
+		SELECT tfa.loginID,
+		tfa.fair_no AS id,
+		tfa.fair_title AS title,
+		ifnull(tfa.fair_content, '-') AS content,
+		ifnull(tfa.fair_startdate, '-') AS startDate,
+		ifnull(tfa.fair_enddate, '-') AS endDate,
+		ifnull(tfa.fair_address1, '-') AS address1,
+		ifnull(tfa.fair_address2, '-') AS address2,
+		ifnull(tfa.fair_zipcode, '-') AS zipcode,
+		ifnull(tfa.fair_name, '-') AS name,
+		ifnull(tfa.fair_location, '-') AS location,
+		ifnull(tfa.fair_companyNum, '-') AS companyNum,
+		ifnull(ui.user_phone, '-') AS phone,
+		ifnull(ui.user_email, '-') AS email,
+		ifnull(tfj.join_boothnum, '0') AS boothNum,
+		tfj.is_delete AS isDelete,
+		ifnull(tfj.join_memo, '-') AS memo,
+		ifnull(tfa.file_cd, '0') AS fileCd,
+			tfi.file_name,
+			tfi.file_size,
+			tfi.file_nadd,
+			tfi.file_madd
+		FROM tb_fair tfa LEFT OUTER JOIN tb_userinfo ui ON tfa.loginID = ui.loginID
+		LEFT OUTER JOIN tb_file tfi ON tfa.file_cd = tfi.file_cd
+		LEFT OUTER JOIN tb_fair_join tfj ON tfa.fair_no = tfj.fair_no
+		WHERE tfa.fair_no = #{id} AND tfj.loginID = #{loginId};
+	</select>
+	<delete id="jobFairBoothMgtCancel">
+		DELETE FROM tb_fair_join WHERE join_id = #{jid}
+	</delete>
+</mapper>

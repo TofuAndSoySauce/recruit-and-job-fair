@@ -1,0 +1,226 @@
+package kr.happyjob.study.userinfo.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.happyjob.study.userinfo.model.MailModel;
+import kr.happyjob.study.userinfo.service.MailService;
+
+@Controller // 이 문서가 Controller 문서임을 입증하는 어노테이션임
+@RequestMapping("/userInfo/")
+public class MailController {
+	
+	@Autowired
+	MailService mailService;
+	
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+	
+	
+	// paramMap은 jsp문서에서 Form태그안에 있는 모든 내용을 가져온다. HttpServletRequest : mail.jsp에서 메일 정보를 보내면 메일 객체 안에 모든 데이터들이 들어간다.
+	@RequestMapping("mailbox.do")
+	public String mail(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception{
+		
+		model.addAttribute("loginId", (String) session.getAttribute("loginId")); // 세션을 통해 로그인한 아이디를 가져와서 jsp 문서에 해당 아이디를 데이터로 넣는다.
+		
+		return "userinfo/mail/mailbox";
+		
+	}
+	
+	// 메일 보내기 함수
+	@RequestMapping("mailsendfile.do")
+	@ResponseBody
+	public Map<String, Object> mailSend(Model model, @RequestParam Map<String, Object> paramMap,
+			@RequestParam("addfile") List<MultipartFile> multiFile, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		// 데이터가 올바르게 넘어왔는지 Console 창에서 확인하는 Logger
+		logger.info("   - paramMap : " + paramMap);
+		logger.info("   - request : " + request);
+		
+		// session에 저장된 로그인 아이디를 paramMap에 추가한다.
+		paramMap.put("loginId", session.getAttribute("loginId"));
+		
+		// 메일 보내기 함수 (첨부 파일)
+		mailService.sendMailFile(paramMap, request, multiFile);
+		
+		Map<String, Object> returnMap = new HashMap<String, Object>(); // Map으로 받았기 때문에 반드시 HashMap으로 해야합니다.
+
+		returnMap.put("result", "SUCCESS"); // 메일 보내기가 성공을 하면 returnMap의 result에 SUCCESS로 추가한다. 
+		
+		//(jsp 문서 AJAX 함수의 Callback 함수의 매개변수 res.result = returnMap.result로 생각하면 된다.)
+
+		return returnMap;
+		
+	}
+	
+	// 보낸 메일함 조회 함수
+	@RequestMapping("maillist.do")
+	public String mailSendList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("   - paramMap : " + paramMap);
+		
+		// 로그인한 아이디를 사용할 거면 반드시 넣어야 한다.
+		paramMap.put("loginId", session.getAttribute("loginId"));
+		
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+		
+		System.out.println(" 현재 페이지 : " + cpage);
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		paramMap.put("cpage", cpage);
+		
+		// 보낸 메일함 조회 함수
+		List<MailModel> mailList = mailService.sendMailList(paramMap);
+		
+		// 보낸 메일함 총 건수 함수
+		int countSendMailList = mailService.countSendMailList(paramMap);
+		
+		// 보낸 메일함
+		model.addAttribute("mailList", mailList);
+		model.addAttribute("countSendMailList", countSendMailList);
+		
+		return "userinfo/mail/MailBoxList";
+	}
+	
+	// 보낸 메일함 검색어가 있는 상태에서 페이지네이션을 클릭시 아무런 변화가 없어야 한다 (검색이 안되야 한다)
+	@RequestMapping("noChangeSendMail.do")
+	public String noChangeSendMail(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+			
+			logger.info("   - paramMap : " + paramMap);
+			
+			// 로그인한 아이디를 사용할 거면 반드시 넣어야 한다.
+			paramMap.put("loginId", session.getAttribute("loginId"));
+			
+			int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+			int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+			int pageindex = (cpage - 1) * pageSize;
+		
+			paramMap.put("pageindex", pageindex);
+			paramMap.put("pageSize", pageSize);
+			
+			// 보낸 메일함 조회 함수
+			List<MailModel> mailList = mailService.noChangeSendMail(paramMap);
+			
+			// 보낸 메일함 총 건수 함수
+			int countSendMailList = mailService.noChangeCountSendMailList(paramMap);
+			
+			// 보낸 메일함
+			model.addAttribute("mailList", mailList);
+			model.addAttribute("countSendMailList", countSendMailList);
+			
+			return "userinfo/mail/MailBoxList";
+	}
+	
+	// 보낸 메일함 상세 보기 (제목을 클릭시) 함수
+	@RequestMapping("sendmaildetail.do")
+	@ResponseBody
+	public Map<String, Object> sendMailDetail(Model model, @RequestParam Map<String, Object> paramMap,
+			HttpServletRequest request, HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("   - paramMap : " + paramMap);
+		
+		MailModel detail = mailService.sendMailDetail(paramMap);
+		
+		Map<String, Object> returnMap = new HashMap<String, Object>();
+		
+		returnMap.put("detail", detail);
+		
+		logger.info("   - returnMap : " + returnMap);
+		
+		return returnMap;
+		
+	}
+	
+	// 보낸 메일함 조회 함수
+	@RequestMapping("mailrecelist.do")
+	public String mailReceList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+				HttpServletResponse response, HttpSession session) throws Exception {
+			
+			logger.info("   - paramMap : " + paramMap);
+			
+			// 로그인한 아이디를 사용할 거면 반드시 넣어야 한다.
+			paramMap.put("loginId", session.getAttribute("loginId"));
+			
+			int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+			int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+			int pageindex = (cpage - 1) * pageSize;
+			
+			paramMap.put("pageindex", pageindex);
+			paramMap.put("pageSize", pageSize);
+			
+			// 받은 메일함 조회 함수
+			List<MailModel> mailReceList = mailService.receMailList(paramMap);
+			
+			// 받은 메일함 총 건수 함수
+			int countReceMailList = mailService.countReceMailList(paramMap);
+			
+			// 보낸 메일함
+			model.addAttribute("mailReceList", mailReceList);
+			model.addAttribute("countReceMailList", countReceMailList);
+			
+			return "userinfo/mail/ReceMailBoxList";
+			
+	}
+	
+	// 보낸 메일함 상세 보기 (제목을 클릭시) 함수
+		@RequestMapping("Recemaildetail.do")
+		@ResponseBody
+		public Map<String, Object> Recemaildetail(Model model, @RequestParam Map<String, Object> paramMap,
+				HttpServletRequest request, HttpServletResponse response, HttpSession session) throws Exception {
+			
+			logger.info("   - paramMap : " + paramMap);
+			
+			MailModel detail = mailService.Recemaildetail(paramMap);
+			mailService.mailUpdate(paramMap);
+			
+			Map<String, Object> returnMap = new HashMap<String, Object>();
+			
+			returnMap.put("detail", detail);
+			
+			logger.info("   - returnMap : " + returnMap);
+			
+			return returnMap;
+			
+		}
+		
+		// 보낸 메일함 상세 보기 (제목을 클릭시) 함수
+		@RequestMapping("deleteMail.do")
+		@ResponseBody
+		public Map<String, Object> deleteMail(Model model, @RequestParam Map<String, Object> paramMap,
+				HttpServletRequest request, HttpServletResponse response, HttpSession session) throws Exception {
+			
+			logger.info("   - paramMap : " + paramMap);
+			
+			mailService.deleteMail(paramMap);
+			
+			Map<String, Object> returnMap = new HashMap<String, Object>();
+			
+			logger.info("   - returnMap : " + returnMap);
+			
+			return returnMap;
+			
+		}
+
+}

@@ -1,0 +1,42 @@
+var pageSize = 5;
+var pageBlockSize = 5;
+
+$(function () {
+  fetchAdList();
+});
+
+// 채용공고 리스트 조회
+function fetchAdList(currentPage) {
+  // param 설정
+  currentPage = currentPage || 1;
+
+  const param = {
+    currentPage: currentPage,
+    pageSize: pageSize,
+    hireType: $("#hireType").val(),
+    location: $("#location").val(),
+    education: $("#education").val(),
+    keyword: $("#keyword").val(),
+  };
+
+  // callback after request
+  var adListCallback = function (response) {
+    $("#listNotice").empty().append(response);
+
+    var countnoticelist = $("#totcnt").val();
+
+    var paging = getPaginationHtml(
+      currentPage,
+      countnoticelist,
+      pageSize,
+      pageBlockSize,
+      "fetchAdList"
+    );
+
+    $("#noticePagination").empty().append(paging);
+
+    $("#currentpage").val(currentPage);
+  };
+
+  callAjax("/ad/list.do", "GET", "text", "false", param, adListCallback);
+}

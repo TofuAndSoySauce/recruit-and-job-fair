@@ -1,0 +1,42 @@
+package kr.happyjob.study.fair.service;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.happyjob.study.fair.dao.JobFairBoothMgtDao;
+import kr.happyjob.study.fair.model.JobFairBoothMgtModel;
+
+@Service
+public class JobFairBoothMgtServiceImpl implements JobFairBoothMgtService{
+	
+	@Autowired
+	JobFairBoothMgtDao jobFairBoothMgtDao ;
+	
+	@Override
+	public JobFairBoothMgtModel jobFairBoothMgtDetail(Map<String, Object> paramMap) {
+		// TODO Auto-generated method stub
+		return jobFairBoothMgtDao.jobFairBoothMgtDetail(paramMap);
+	}
+
+	@Override
+	public int countJobFairBoothMgtList(Map<String, Object> paramMap) {
+		// TODO Auto-generated method stub
+		return jobFairBoothMgtDao.countJobFairBoothMgtList(paramMap);
+	}
+
+	@Override
+	public List<JobFairBoothMgtModel> jobFairBoothMgtList(Map<String, Object> paramMap) {
+		// TODO Auto-generated method stub
+		return jobFairBoothMgtDao.jobFairBoothMgtList(paramMap);
+	}
+
+	@Override
+	public int jobFairBoothMgtCancel(Map<String, Object> paramMap) {
+		// TODO Auto-generated method stub
+		return jobFairBoothMgtDao.jobFairBoothMgtCancel(paramMap);
+	}
+
+}

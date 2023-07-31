@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.happyjob.study.resume.dao.ProposalDao">
+	
+	<select id="getProposalList" 
+	resultType="kr.happyjob.study.resume.model.ProposalResponse$Proposal">
+		SELECT 
+		  p.proposal_no proposalNo,
+		  p.proposal_memo memo,
+		  p.reg_date proposedDate,
+		  p.proposal_company companyName,
+		  p.update_date updatedAt,
+		  p.proposal_accept accepted,
+		  h.resume_no resumeNo,
+		  r.resume_title resumeTitle,
+		  c1.detail_name experience,
+		  c2.detail_name position,
+		    (SELECT 
+		        COUNT(*)
+		      FROM 
+		        tb_resume_proposal p
+		      JOIN
+		        tb_resume_history h
+		      ON
+		        h.history_no = p.history_no
+		      JOIN
+		        tb_userinfo company
+		      ON
+		        company.loginID = h.loginID
+		      JOIN
+		        tb_resume r
+		      ON 
+		        r.resume_no = h.resume_no
+		      WHERE
+		        r.loginID = #{loginId}
+		      AND 
+		        p.proposal_accept = 1
+		        ) newProposalCount,
+	        
+		     (SELECT 
+		        COUNT(*)
+		      FROM 
+		        tb_resume_proposal p
+		      JOIN
+		        tb_resume_history h
+		      ON
+		        h.history_no = p.history_no
+		      JOIN
+		        tb_userinfo company
+		      ON
+		        company.loginID = h.loginID
+		      JOIN
+		        tb_resume r
+		      ON 
+		        r.resume_no = h.resume_no
+		      WHERE
+		        r.loginID = #{loginId}
+		        ) totalProposalCount        
+		FROM
+		  tb_resume_proposal p
+		JOIN
+		  tb_resume_history h
+		ON
+		  h.history_no = p.history_no
+		JOIN
+		  tb_userinfo company
+		ON
+		  company.loginID = h.loginID
+		JOIN
+		  tb_resume r
+		ON 
+		  r.resume_no = h.resume_no
+		JOIN
+		  tb_detail_code c1
+		ON
+		  c1.group_code = 'resume_experience'
+		AND
+		  c1.detail_code = p.proposal_experience
+		JOIN
+		  tb_detail_code c2
+		ON
+		  c2.group_code = 'position'
+		AND
+		  c2.detail_code = p.proposal_position
+		WHERE
+		  r.loginID = #{loginId}
+		ORDER BY
+		  p.proposal_no DESC
+		  
+		LIMIT #{pageIndex}, #{pageSize}
+			
+	</select>
+	
+	<select id="getProposedCompany" 
+			resultType="kr.happyjob.study.resume.model.ProposalResponse$ProposedCompany">
+	SELECT
+	  company.loginID companyName,
+	  company.user_email email,
+	  company.user_phone phone,
+	  company.user_birthday establishedDate,
+	  CONCAT (company.user_address1, ' ', company.user_address2) address,
+	  f.file_nadd imageURL,
+	  c1.detail_name category,
+	  c2.detail_name size
+	FROM
+	  tb_userinfo company 
+  	LEFT JOIN 
+ 		tb_file f 
+	ON 
+		f.file_cd = company.file_cd
+	JOIN
+	  tb_detail_code c1
+	ON
+	  c1.group_code = 'company_category'
+	AND
+	  c1.detail_code = company.user_company_category
+	JOIN
+	  tb_detail_code c2
+	ON
+	  c2.group_code = 'company_size'
+	AND
+	  c2.detail_code = company.user_company_size
+	WHERE 
+	  loginID = #{companyLoginId}
+
+	</select>
+
+	<update id="updateAsAccepted">
+		UPDATE
+			tb_resume_proposal
+		SET
+			update_date = CURDATE(),
+			proposal_memo = #{proposalMemo},
+			proposal_accept = 3
+		WHERE
+			proposal_no = #{proposalNo}
+			
+	</update>
+	
+	<update id="updateAsDeclined">
+		UPDATE
+			tb_resume_proposal
+		SET
+			update_date = CURDATE(),
+			proposal_accept = 2
+		WHERE
+			proposal_no = #{proposalNo}
+	</update>
+	
+	<select id="getOneByLoginIdAndProposalNo" resultType="integer">
+		SELECT 
+		  p.proposal_no proposalNo
+	  	FROM 
+		  tb_resume_proposal p
+		JOIN
+		  tb_resume_history h
+		ON
+		  h.history_no = p.history_no
+		JOIN
+		  tb_resume r
+		ON
+		  h.resume_no = r.resume_no
+		WHERE
+		  r.loginID = #{loginId}
+		AND
+		  p.proposal_no = #{proposalNo}
+	</select>
+</mapper>

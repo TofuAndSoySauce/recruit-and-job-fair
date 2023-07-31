@@ -1,0 +1,14 @@
+#happyjob.properties \uc785\ub2c8\ub2e4. test
+# \ud30c\uc77c \uc5c5\ub85c\ub4dc \uacbd\ub85c \uc124\uc815
+fileUpload.rootPath=X:\\FileRepository
+fileUpload.logicalrootPath=/serverfile
+fileUpload.noticePath=notice
+fileUpload.communityPath=community
+fileUpload.expensePath=expense
+fileUpload.profilePath=profile
+fileUpload.fairPath=fair
+fileUpload.qnaPath=qna
+
+# \uc18c\uc15c \ub85c\uadf8\uc778 \uc815\ubcf4
+ouath.kakao.client_id=7ee1658a3c38d5c4932cc70798e38ed8
+ouath.kakao.redirect_url=http://localhost:80/auth/kakao/callback

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.userinfo.dao.UserInfoDao">
+
+	<!-- 채용공고 리스트 불러오기 -->
+	<select id="adList" resultType="kr.happyjob.study.ad.model.AdModel">
+		select
+		 	  ad_no
+			, ad_title
+			, ad_education
+			, ad_type
+			, ad_salary
+			, ad_experience
+			, ad_date
+			, ad_yn
+			, ad_status
+			, reg_date
+		from
+	   		tb_ad 
+   		<where>
+				is_delete = 2
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and ad_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and reg_date <![CDATA[>=]]>	#{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and reg_date <![CDATA[<=]]> #{srcedate}
+			</if>
+			<choose>
+				<when test="(waitSelect != null) and ( !''.equals(waitSelect) ) and (acceptSelect != null) and ( !''.equals(acceptSelect) ) and (cancleSelect != null) and ( !''.equals(cancleSelect) ) ">
+					and ad_yn in (1, 2, 3)
+				</when>
+				<when test="(waitSelect != null) and ( !''.equals(waitSelect) ) and (cancleSelect != null) and ( !''.equals(cancleSelect) ) ">
+					and ad_yn in (1, 2)
+				</when>
+				<when test="(waitSelect != null) and ( !''.equals(waitSelect) ) and (acceptSelect != null) and ( !''.equals(acceptSelect) ) ">
+					and ad_yn in (1, 3)
+				</when>
+				<when test="(acceptSelect != null) and ( !''.equals(acceptSelect) ) and (cancleSelect != null) and ( !''.equals(cancleSelect) ) ">
+					and ad_yn in (2, 3)
+				</when>
+				<when test="(waitSelect != null) and ( !''.equals(waitSelect) ) ">
+					and ad_yn = 1
+				</when>
+				<when test="(cancleSelect != null) and ( !''.equals(cancleSelect) ) ">
+					and ad_yn = 2
+				</when>
+				<when test="(acceptSelect != null) and ( !''.equals(acceptSelect) ) ">
+					and ad_yn = 3
+				</when>
+			</choose>
+		</where>
+		order by
+			ad_no desc
+ 		limit 
+			#{pageindex}, #{pageSize} 
+	</select>
+	
+	
+	<!-- 상세보기 초기화 (기업정보 + 채용공고) -->
+	<select id="adDetail" resultType="hashmap">
+		select
+			  ad.ad_no
+			, ad.ad_title
+			, ad.ad_content
+			, ad.ad_type
+			, ad.ad_location
+			, ad.ad_position
+			, ad.ad_role
+			, ad.ad_salary
+			, ad.ad_experience
+			, ad.ad_education
+			, ad.ad_perference
+			, ad.ad_date
+			, ad.ad_yn
+			, ad.ad_status
+			, ad.reg_date
+			, ad.update_date
+			, ad.is_delete
+			, ad.loginID
+		 	, ad.file_cd
+			, ui.name
+			, ui.user_phone
+			, ui.user_birthday
+			, ui.user_company_size
+			, ui.user_email
+			, ui.user_company_category
+			, ui.user_zipcode
+			, ui.user_address1
+			, ui.user_address2
+ 			, fe.file_name
+			, fe.file_size
+			, fe.file_nadd
+			, fe.file_madd 
+		from
+				 tb_ad ad
+	   		join tb_userinfo ui
+	   		on   ad.loginID = ui.loginID
+ 	   		left join tb_file fe
+	   		on   ad.file_cd = fe.file_cd 
+		where
+			ad_no = #{ad_no}
+	</select>
+
+
+	<!-- 채용공고 수락 -->
+	<update id="acceptAd">
+		update
+			tb_ad
+		set
+			ad_yn = 3
+		where
+			ad_no = #{ad_no}
+	</update>
+	
+	
+	<!-- 채용공고 반려 -->
+	<update id="cancelAd">
+		update
+			tb_ad
+		set
+			ad_yn = 2
+		where
+			ad_no = #{ad_no}
+	</update>
+	
+	
+	<!-- 채용공고 리스트 카운트 -->
+	<select id="countAdList" resultType="int">
+		select
+			count(1) as tot_cnt
+		from
+			tb_ad
+		<where>
+				is_delete = 2
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and ad_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and reg_date <![CDATA[>=]]> #{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and reg_date <![CDATA[<=]]> #{srcedate}
+			</if>
+			<choose>
+				<when test="(waitSelect != null) and ( !''.equals(waitSelect) ) and (acceptSelect != null) and ( !''.equals(acceptSelect) ) and (cancleSelect != null) and ( !''.equals(cancleSelect) ) ">
+					and ad_yn in (1, 2, 3)
+				</when>
+				<when test="(waitSelect != null) and ( !''.equals(waitSelect) ) and (cancleSelect != null) and ( !''.equals(cancleSelect) ) ">
+					and ad_yn in (1, 2)
+				</when>
+				<when test="(waitSelect != null) and ( !''.equals(waitSelect) ) and (acceptSelect != null) and ( !''.equals(acceptSelect) ) ">
+					and ad_yn in (1, 3)
+				</when>
+				<when test="(acceptSelect != null) and ( !''.equals(acceptSelect) ) and (cancleSelect != null) and ( !''.equals(cancleSelect) ) ">
+					and ad_yn in (2, 3)
+				</when>
+				<when test="(waitSelect != null) and ( !''.equals(waitSelect) ) ">
+					and ad_yn = 1
+				</when>
+				<when test="(cancleSelect != null) and ( !''.equals(cancleSelect) ) ">
+					and ad_yn = 2
+				</when>
+				<when test="(acceptSelect != null) and ( !''.equals(acceptSelect) ) ">
+					and ad_yn = 3
+				</when>
+			</choose>
+		</where>
+	</select>
+
+</mapper>

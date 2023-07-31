@@ -1,0 +1,378 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compㄴatible" content="IE=edge" />
+<title>개인정보조회</title>
+<!-- 우편번호 조회 -->
+<script
+	src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script type="text/javascript" charset="utf-8"
+	src="${CTX_PATH}/js/popFindZipCode.js"></script>
+<!-- sweet alert import -->
+<script src='${CTX_PATH}/js/sweetalert/sweetalert.min.js'></script>
+<jsp:include page="/WEB-INF/view/common/common_include.jsp"></jsp:include>
+<!-- sweet swal import -->
+<script type="text/javascript">
+	$(function() {
+		buttonClickEvent();
+		fn_profileEditDetail();
+	});
+	function buttonClickEvent() {
+		$("a[name=btn]").click(function(e) {
+			e.preventDefault();
+	
+			var btnId = $(this).attr("id");
+	
+			switch (btnId) {
+			case "btnupdate":
+				fn_updateFile();
+				break;
+			}
+		});
+	}
+	//개인정보 화면 출력
+	function fn_profileEditDetail(){
+		var param = {}
+	
+		var detailcallback = function detailcallback(res) {
+			$("#loginID").val(res.loginID);
+			$("#name").val(res.name);
+			$("#password").val(res.password);
+			$("#phone").val(res.phone);
+			$("#email").val(res.email);
+			$("#zipcode").val(res.zipcode);
+			$("#birthday").val(res.birthday);
+			$("#sexuality").val(res.sexuality);
+			
+			$("#address1").val(res.address1);
+			$("#preferPosition").val(res.preferPositionCd);
+			$("#address2").val(res.address2);
+			$("#preferArea").val(res.preferAreaCd);
+			
+			$('input[id="preferPosition"][value="res.preferPositionCd"]').prop("selected", true);
+			$('input[id="preferArea"][value="res.preferAreaCd"]').prop("selected", true);
+	
+			$("#filecd").val(res.fileCd);
+	
+			// 저장된 파일 미리보기
+			var file_name = res.file_name;
+			var filearr = [];
+			var previewhtml = "";
+	
+			if (file_name == "" || file_name == null || file_name == undefined) {
+				previewhtml = "";
+			} else {
+	
+				filearr = file_name.split(".");
+	
+				if (filearr[1] == "jpg" || filearr[1] == "png") {
+					previewhtml = "<a> <img src='" + res.file_nadd + "' style='width: 200px; height: 130px;' />  </a>";
+				} else {
+					previewhtml = "<a>"
+							+ res.file_name + "</a>";
+				}
+			}
+			$("#profilePreview").empty().append(previewhtml);
+		}
+	
+		callAjax("/userInfo/profileEditDetail.do", "post", "json", true, param,
+				detailcallback);
+	}
+	// 개인정보수정 with 파일 
+	function fn_updateFile() {
+		//$("action").val("U");
+		//저장할 때 정규식 
+		var emailRules = /^[0-9a-zA-Z]([-_\.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_\.]?[0-9a-zA-Z])*\.[a-zA-Z]{2,3}$/i;
+		var addrRules = /[0-9]{5}/;
+		var telRules = /^\d{2,3}-\d{3,4}-\d{4}$/;
+		var hpRules = /^\d{3}-\d{3,4}-\d{4}$/;
+		var perRules = /^\d{3}-\d{2}-\d{5}$/;
+		var birthRules = /^\d{4}-\d{2}-\d{2}$/;
+
+	   if (!addrRules.test($("#zipcode").val())) {
+			swal("우편번호를 확인해주세요.(숫자 5글자 입니다.)").then(function() {
+				$("#zipcode").focus();
+			})
+			return false;
+		} else if (!emailRules.test($("#email").val())) {
+			swal("이메일 형식을 확인해주세요.").then(function() {
+				$("#email").focus();
+			})
+			return false;
+		} else if (!telRules.test($("#phone").val())) {
+			swal("전화번호를 확인해주세요. (-) 포함입니다.").then(function() {
+				$("#phone").focus();
+			})
+			return false;
+		} else if (!birthRules.test($("#birthday").val())) {
+			swal("생년월일을 확인해주세요. 예시)1990-01-01").then(function() {
+				$("#birthday").focus();
+			})
+			return false;
+		}
+
+		///정규식 종료
+		if (!fn_validate()) {
+			return;
+		}
+		var frm = document.getElementById("myForm");
+		frm.enctype = "multipart/form-data";
+		var param = new FormData(frm);
+
+		var updatecallback = function(res) {
+			if (true) {
+
+				alert("수정되었습니다.");
+				fn_profileEditDetail();
+			}
+		}
+		callAjaxFileUploadSetFormData("/userInfo/profileEditUpdateFile.do",
+				"post", "json", true, param, updatecallback);
+	}
+	//개인정보 수정 - 우편번호검색 다음주소 api 
+	$('#zipcode').attr('onclick', 'execDaumPostcode()').bind('click');
+	function execDaumPostcode(q) {
+		new daum.Postcode({
+			oncomplete : function(data) {
+				// 팝업에서 검색결과 항목을 클릭했을때 실행할 코드를 작성하는 부분.
+
+				// 각 주소의 노출 규칙에 따라 주소를 조합한다.
+				// 내려오는 변수가 값이 없는 경우엔 공백('')값을 가지므로, 이를 참고하여 분기 한다.
+				var addr = ''; // 주소 변수
+				var extraAddr = ''; // 참고항목 변수
+
+				//사용자가 선택한 주소 타입에 따라 해당 주소 값을 가져온다.
+				if (data.userSelectedType === 'R') { // 사용자가 도로명 주소를 선택했을 경우
+					addr = data.roadAddress;
+				} else { // 사용자가 지번 주소를 선택했<!-- 을 경우(J)
+					addr = data.jibunAddress;
+				}
+
+				// 사용자가 선택한 주소가 도로명 타입일때 참고항목을 조합한다.
+				if (data.userSelectedType === 'R') {
+					// 법정동명이 있을 경우 추가한다. (법정리는 제외)
+					// 법정동의 경우 마지막 문자가 "동/로/가"로 끝난다.
+					if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
+						extraAddr += data.bname;
+					}
+					// 건물명이 있고, 공동주택일 경우 추가한다.
+					if (data.buildingName !== '' && data.apartment === 'Y') {
+						extraAddr += (extraAddr !== '' ? ', '
+								+ data.buildingName : data.buildingName);
+					}
+				}
+
+				// 우편번호와 주소 정보를 해당 필드에 넣는다.
+				document.getElementById("zipcode").value = data.zonecode;
+				document.getElementById("address1").value = addr;
+				// 커서를 상세주소 필드로 이동한다.
+				document.getElementById("address2").focus();
+			}
+		}).open({
+			q : q
+		});
+	}
+
+	/* 프로필 미리보기 */
+	window.onload = function() {
+		//프로필 클릭시 
+		$('#userProfile').attr('onclick', 'document.all.profileUpload.click()')
+				.bind('click');
+
+		var upfile = document.getElementById('profileUpload');
+		upfile
+				.addEventListener(
+						'change',
+						function(event) {
+							$("#profilePreview").empty();
+							var image = event.target;
+							var imgpath = "";
+							if (image.files[0]) {
+								imgpath = window.URL
+										.createObjectURL(image.files[0]);
+
+								var filearr = $("#profileUpload").val().split(
+										".");
+
+								var previewhtml = "";
+
+								if (filearr[1] == "jpg" || filearr[1] == "png") {
+									previewhtml = "<img src='" + imgpath + "' style='width: 200px; height: 130px;' />";
+								} else {
+									previewhtml = "";
+								}
+
+								$("#profilePreview").empty()
+										.append(previewhtml);
+							}
+						});
+
+	}
+	//Validate 체크 하는 부분
+	function fn_validate() {
+
+	      var chk = checkNotEmpty(
+	            [
+	                   [ "phone", "전화번호를 입력해 주세요" ]
+	               ,   [ "zipcode", "우편번호를 입력을 입력해 주세요." ]
+	               ,   [ "password", "비밀번호를 입력을 입력해 주세요." ]
+	               ,   [ "birthday", "생년월일을 입력해 주세요" ]
+		           ,   [ "address1", "주소를 입력을 입력해 주세요." ]
+		           ,   [ "preferArea", "선호지역을 입력을 입력해 주세요." ]
+	               ,   [ "address2", "상세주소를 입력을 입력해 주세요." ]
+	               ,   [ "preferPosition", "선호직무를 입력을 입력해 주세요." ]
+	               ,   [ "email", "이메일을 입력을 입력해 주세요." ]
+	               ,   [ "profileUpload", "프로필사진을 입력을 입력해 주세요." ]
+	            ]
+	      );
+
+	      if (!chk) {
+	    	  
+	         return;
+	      } else{
+	    	  
+	   	  return true;
+	      }
+	      
+	   }
+</script>
+<body>
+
+	<form id="myForm" action="" method="">
+		<input type="hidden" name="action" id="action" value=""> <input
+			type="hidden" name="currentpage" id="currentpage" value="">
+			<input
+			type="hidden" name="filecd" id="filecd" value="">
+		<div id="wrap_area">
+
+			<h2 class="hidden">header 영역</h2>
+			<jsp:include page="/WEB-INF/view/common/header.jsp"></jsp:include>
+
+			<h2 class="hidden">컨텐츠 영역</h2>
+			<div id="container">
+				<ul>
+					<li class="lnb">
+						<!-- lnb 영역 --> <jsp:include
+							page="/WEB-INF/view/common/lnbMenu.jsp"></jsp:include> <!--// lnb 영역 -->
+					</li>
+					<li class="contents">
+						<!-- contents -->
+						<h3 class="hidden">contents 영역</h3> <!-- content -->
+						<div class="content">
+
+							<p class="Location">
+								<a href="../dashboard/dashboard.do" class="btn_set home">메인으로</a>
+								<span class="btn_nav bold">마이페이지</span> <span
+									class="btn_nav bold">개인정보 수정</span> <a
+									href="../userInfo/profileEdit.do" class="btn_set refresh">새로고침</a>
+							</p>
+
+							<p class="conTitle">
+								<span>개인정보 수정</span>
+							</p>
+							<table
+								style="margin-bottom: 10px; border: 1px #e2e6ed; border-style: solid"
+								height="50px" width="100%" align="left" class="row">
+								<caption>caption</caption>
+								<colgroup>
+									<col width="18%">
+									<col width="14%">
+									<col width="20%">
+									<col width="14%">
+									<col width="20%">
+								</colgroup>
+								<tr>
+									<td rowspan="6" id="userProfile" class="userProfile profile">
+										<div id="profilePreview"></div> <input type="file"
+										name="profileUpload" id="profileUpload" style="display: none;">
+									</td>
+									<th scope="row">아이디</th>
+									<td><input type="text" class="inputTxt p100"
+										name="loginID" id="loginID" readonly
+										value="${profileEditInfo.loginID}" /></td>
+									<th scope="row">비밀번호</th>
+									<td><input type="password" class="inputTxt p100"
+										name="password" id="password"
+										value="${profileEditInfo.password}" /></td>
+								</tr>
+								<tr>
+									<th scope="row">이름</th>
+									<td><input type="text" class="inputTxt p100" name="name"
+										id="name" readonly value="${profileEditInfo.name}" /></td>
+									<th scope="row">전화번호</th>
+									<td><input type="text" class="inputTxt p100" name="phone"
+										id="phone" value="${profileEditInfo.phone}" /></td>
+								</tr>
+								<tr>
+									<th scope="row">우편번호</th>
+									<td><input type="text" class="inputTxt p100"
+										name="zipcode" id="zipcode" style="width: 50px;"
+										value="${profileEditInfo.zipcode}" /><input type="button"
+										value="우편번호찾기" onclick="execDaumPostcode()"></td>
+									<th scope="row">생년월일</th>
+									<td><input type="text" class="inputTxt p100"
+										name="birthday" id="birthday"
+										value="${profileEditInfo.birthday}" /></td>
+								</tr>
+								<tr>
+									<th scope="row">주소</th>
+									<td><input type="text" class="inputTxt p100"
+										name="address1" id="address1" style="width: 50px;"
+										value="${profileEditInfo.address1}" /></td>
+									<th scope="row">선호지역</th>
+									<td><select id="preferArea" name="preferArea">
+												<option value="-">선호지역을 선택해주세요</option>
+												<c:forEach items="${prefArea}" var="list">
+													<option value="${list.preferAreaCd}">${list.preferArea}</option>
+												</c:forEach>
+									</select></td>
+								</tr>
+								<tr>
+									<th scope="row">상세주소</th>
+									<td><input type="text" class="inputTxt p100"
+										name="address2" id="address2" style="width: 50px;"
+										value="${profileEditInfo.address2}" /></td>
+									<th scope="row">선호직무</th>
+									<td><select
+										id="preferPosition" name="preferPosition">
+												<option value="-">선호직무를 선택해주세요</option>
+												<c:forEach items="${prefPos}" var="list">
+													<option value="${list.preferPositionCd}">${list.preferPosition}</option>
+												</c:forEach>
+									</select></td>
+								</tr>
+								<tr>
+									<th scope="row">이메일</th>
+									<td><input type="text" class="inputTxt p100" name="email"
+										id="email" value="${profileEditInfo.email}" /> <!-- <input
+										type="button" value="이메일중복확인"> --></td>
+
+									<th scope="row">성별</th>
+									<td><input type="text" class="inputTxt p100"
+										name="sexuality" id="sexuality" readonly
+										value="${profileEditInfo.sexuality}" /></td>
+								</tr>
+
+							</table>
+							<br><br><br><br><br><br><br><br>
+							<br><br><br><br><br><br><br><br>
+							<div class="mt30 btn_areaC">
+								<a href="" class="btnType blue" id="btnupdate" name="btn"><span>수정</span></a>
+
+							</div>
+
+						</div> <!--// content -->
+
+						<h3 class="hidden">풋터 영역</h3> <jsp:include
+							page="/WEB-INF/view/common/footer.jsp"></jsp:include>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</form>
+</body>
+</html>

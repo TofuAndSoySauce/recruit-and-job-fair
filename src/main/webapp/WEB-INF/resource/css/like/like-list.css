@@ -1,0 +1,33 @@
+div.queryParamArea {
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+}
+
+div.queryParamArea > div.checkBoxParam {
+  display: flex;
+  align-items: center;
+}
+
+div.deleteLikesButtonArea {
+  display: none;
+  width: 80px;
+  height: 40px;
+  position: absolute;
+  left: 0;
+  text-align: center;
+  bottom: 150px;
+  line-height: 40px;
+}
+
+button#deleteLikesButton {
+  border: none;
+  width: inherit;
+  height: inherit;
+  font-size: 18px;
+  background: dodgerblue;
+  color: white;
+  font-family: inherit;
+  display: block;
+  cursor: pointer;
+}

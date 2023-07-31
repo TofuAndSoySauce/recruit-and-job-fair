@@ -1,0 +1,23 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+
+<c:forEach items="${prsnllist}" var="list">
+		<tr>
+			<td><a href="javascript:openDetail(${list.loginID})">${list.loginID}</a></td>
+			<td>${list.name}</td>
+			<td>${list.age}</td>
+			<td>${list.sex}</td>
+			<td>${list.position}</td>
+			<td>${list.location}</td>
+			<c:choose>
+				<c:when test="${list.is_delete eq 2}"><td>${'N'}</td></c:when>
+				<c:when test="${list.is_delete eq 1}"><td>${'Y'}</td></c:when>	
+			</c:choose>
+		</tr>
+</c:forEach>
+
+<input type="hidden" id="totcnt" name="totcnt" value="${countnoticelist}"/>
+
+

@@ -1,0 +1,41 @@
+@charset "utf-8";
+
+div.content {
+  position: relative;
+}
+
+div#resumeListModal {
+  z-index: 10000;
+  display: none;
+  width: 300px;
+  background: white;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+ul#resumeList {
+  font-size: 15px;
+  border-top: 1px solid darkgray;
+  border-left: 1px solid darkgray;
+  border-right: 1px solid darkgray;
+}
+
+li.resumeElement {
+  padding: 10px;
+  border-bottom: 1px solid darkgray;
+}
+
+.submitArea a.close:hover,
+a.close:focus {
+  cursor: pointer;
+}
+
+label.resumeLabel {
+  display: block;
+  width: inherit;
+  height: 30px;
+  text-align: center;
+  line-height: 30px;
+  padding: 10px;
+}

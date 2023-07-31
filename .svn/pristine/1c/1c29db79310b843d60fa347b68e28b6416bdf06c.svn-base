@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.login.dao.LoginDao">
+   
+<!-- 사용자 로그인 체크 -->
+   <select id="checkLogin" resultType="String">
+      /*kr.happy.study.login.dao.LoginDao.checkLogin*/
+            SELECT  user_Type
+              FROM    tb_userinfo 
+            WHERE   loginID = #{lgn_Id}
+               AND  password = #{pwd}
+     </select>
+     
+   
+   <!-- 사용자 로그인 -->
+   <select id="selectLogin" resultType="kr.happyjob.study.login.model.LgnInfoModel">
+      /*kr.happy.study.login.dao.LoginDao.selectLogin*/
+      SELECT  loginID as lgn_id
+               , name as usr_nm
+               , user_Type as mem_author
+      FROM tb_userinfo 
+     WHERE loginID = #{lgn_Id}
+        AND password = #{pwd}
+     </select>
+     
+     
+<!-- 사용자 메뉴 권한 -->
+   <select id="listUsrMnuAtrt" resultType="kr.happyjob.study.login.model.UsrMnuAtrtModel">
+         /*kr.happy.study.login.dao.LoginDao.listUsrMnuAtrt*/
+            SELECT  ta.mnu_id
+                  ,   ta.hir_mnu_id
+                  ,   ta.mnu_nm
+                  ,   ta.mnu_url
+                  ,   ta.mnu_dvs_cod
+                  ,   ta.grp_num
+                  ,   ta.odr
+                  ,   ta.lvl
+                  ,   ta.mnu_ico_cod
+<!--                   ,   ta.use_poa
+                  ,   ta.dlt_poa -->
+               FROM  tm_mnu_mst ta
+               WHERE EXISTS (
+                             SELECT  1
+                             FROM  tn_usr_mnu_atrt tb
+                             WHERE ta.mnu_id = tb.mnu_id
+                                  AND tb.user_type = #{userType}
+                           )
+                  AND ta.lvl=0
+               ORDER BY ta.odr
+     </select>
+     
+<!-- 사용자 자식 메뉴 권한 -->
+   <select id="listUsrChildMnuAtrt" resultType="kr.happyjob.study.login.model.UsrMnuChildAtrtModel">
+      /*kr.happy.study.login.dao.LoginDao.listUsrChildMnuAtrt*/
+         SELECT  ta.mnu_id
+               ,   ta.hir_mnu_id
+               ,   ta.mnu_nm
+               ,   ta.mnu_url
+               ,   ta.mnu_dvs_cod
+               ,   ta.grp_num
+               ,   ta.odr
+               ,   ta.lvl
+               ,   ta.use_poa
+               ,   ta.dlt_poa
+         FROM  tm_mnu_mst ta
+         WHERE EXISTS (
+                          SELECT  1
+                            FROM  tn_usr_mnu_atrt tb
+                          WHERE ta.mnu_id = tb.mnu_id
+                               AND tb.user_type = #{userType}
+                     )
+            AND ta.lvl=1
+            AND hir_mnu_id = #{hir_mnu_id}
+         ORDER BY ta.odr
+     </select>
+     
+<!-- 회원가입 -->
+     <insert id="registerUser" parameterType="java.util.Map">
+     /*kr.happy.study.login.dao.LoginDao.registerUser*/
+     INSERT INTO tb_userinfo (
+     							loginID
+     						,	user_type
+     						,	name
+     						,	password
+     						,	user_email
+     						,	user_birthday
+     						,	user_sexuality
+     						,	user_phone
+     						,	user_zipcode
+     						,	user_address1
+     						,	user_address2
+     						,	user_preferarea
+							,	user_preferposition
+     						,	user_company_number
+     						,	user_company_category
+     						,	user_company_size
+     						,	reg_date
+     						,	is_delete
+     						) VALUES (
+     								#{loginID}
+								,	#{user_type}
+								,	#{name}  
+								,	#{password}  
+								,	#{user_email}
+								,	#{birthday}    
+								,	#{gender}  
+								,	#{user_phone}   
+								,	#{user_zipcode}  
+								,	#{user_address}  
+								,	#{user_dt_address}
+								,	#{user_hope_area}					
+								,	#{user_hope_work}
+								,	#{user_company_number}    	
+								,	#{company_work}  
+								,	#{company_size}
+								,	date_format(Now(), '%Y-%m-%d')
+								,	2	
+     						)
+     
+     
+     </insert>
+     
+    
+<!-- 중복 검사  loginID 중복검사 -->
+	<select id="check_loginID" parameterType="String" resultType="int">
+		SELECT count(*)
+		FROM tb_userinfo
+		WHERE loginID = #{loginID}
+	</select>
+	
+	
+<!-- 회원가입 이메일 중복 검사  -->
+	<select id="check_email" parameterType="String" resultType="int">
+		SELECT count(*)
+		FROM tb_userinfo
+		WHERE user_email = #{user_email}
+	</select>
+	
+<!-- 사용자 ID 찾기 -->
+      <select id="selectFindId" resultType="kr.happyjob.study.login.model.LgnInfoModel">
+	      /*kr.happyjob.study.login.dao.LoginDao.selectFindId*/
+	      SELECT  u.loginID as loginID
+	      	  ,	  u.user_email as user_email
+	      FROM    tb_userinfo as u
+	      WHERE   u.del_cd ="n"
+	      AND	  u.user_email = #{user_email}
+     </select>
+
+      
+<!-- 사용자 PW 찾기 -->
+     <select id="selectFindPw" resultType="kr.happyjob.study.login.model.LgnInfoModel">
+	      /*kr.happyjob.study.login.dao.LoginDao.selectFindPw*/
+	      SELECT  u.loginID as loginID
+	      	  ,   u.password as password
+	      	  ,	  u.user_email as user_email
+	      FROM    tb_userinfo as u
+	      WHERE   u.del_cd ="n"
+	      AND	  u.user_email = #{user_email}
+	      AND 	  u.loginID = #{loginID}
+     </select>
+
+     
+<!-- 사용자 PW 찾기 ID 체크-->
+     <select id="registerIdCheck" resultType="kr.happyjob.study.login.model.LgnInfoModel">
+	     SELECT     u.loginID as loginID
+	     FROM    	tb_userinfo as u
+	     WHERE   	u.del_cd ="n"
+	     AND 	  	u.loginID = #{loginID}
+     </select>  
+     
+<!-- 소셜로그인 사용자 확인 -->
+	<select id="findById" resultType="kr.happyjob.study.login.model.UserInfo">
+		SELECT loginID
+		FROM   tb_userinfo
+		WHERE  loginID = #{loginID}
+	</select>
+
+<!-- 소셜로그인 회원가입 -->
+	<insert id="addUser">
+	 INSERT INTO tb_userinfo (
+     							loginID
+     						,	user_type
+     						,	name
+     						,	password
+     						,	user_email
+     						,	reg_date
+     						,	is_delete
+     						) VALUES (
+     								#{loginID}
+								,	#{user_type}
+								,	#{name}  
+								,	#{password}  
+								,	#{user_email}
+								,	date_format(Now(), '%Y-%m-%d')
+								,	2	
+     						)
+	</insert>
+</mapper>

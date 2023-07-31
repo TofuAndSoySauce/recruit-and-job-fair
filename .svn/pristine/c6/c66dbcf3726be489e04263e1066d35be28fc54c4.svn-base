@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.ad.dao.ProposalStatusDao">
+
+	<!-- tb_resume_proposal : 업체가 취준생한테 면접 일자를 제안하는 테이블 이므로 insert는 반드시 제안(이력서) 현황 (= ProposalStatusMapper) 에서 Insert를 해야만 한다. 
+	     tb_resume_history : 업체가 제안(이력서) 현황 조회 화면에서 이력서를 클릭하면 업체가 이력서를 읽은 것이기에 읽자마자 바로 이력서 열람 기업에 추가해야 한다. -->
+
+	<!-- 이력서 조회 -->
+	
+	<select id="resumeList" resultType="kr.happyjob.study.ad.model.ProposalStatusModel">
+	
+		select tr.resume_no, ui.name as name, tr.resume_title, tr.is_delete,
+		       td1.detail_name as det, td1.detail_code as experience
+		       , td3.detail_code as position, ui.loginID as id
+  		from tb_resume tr
+  		join tb_userinfo ui on ui.loginID = tr.loginID
+      left join tb_detail_code td1 ON td1.detail_code = tr.resume_experience and td1.group_code = 'resume_experience'
+      left join tb_detail_code td3 on td3.detail_code = tr.resume_postion and td3.group_code = 'position'
+		where
+			tr.is_delete = 2
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tr.resume_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(experience != null) and ( !''.equals(experience) )">
+				 and td1.detail_code = #{experience} 
+			</if>
+		group by 
+		 	tr.resume_no
+		order by
+		tr.resume_no desc
+		limit #{pageindex}, #{pageSize}<!-- 페이지 네이션을 위해서는 반드시 limit를 해야만 한다. -->
+		
+	</select>
+	
+	<!-- 제안(이력서) 현황 조회 -->
+	<select id="ProposStatus" resultType="kr.happyjob.study.ad.model.ProposalStatusModel">
+		
+		select trp.proposal_no, td1.detail_name as experience, ui.name as name, trp.is_delete, trp.proposal_accept
+		from tb_resume tr join tb_userinfo ui on tr.loginID = ui.loginID
+		join tb_resume_history trh on trh.resume_no = tr.resume_no
+		join tb_resume_proposal trp on trh.history_no = trp.history_no
+		left join tb_detail_code td1 ON td1.detail_code = trp.proposal_experience and td1.group_code = 'resume_experience'
+		where trh.loginID = #{loginId}
+		order by
+		trp.proposal_no desc
+		limit #{pageindex}, #{pageSize} 
+	
+	</select>
+	
+	<!-- 이력서 총 건수 조회 함수 -->
+	<select id="countResumeList" resultType="int">
+	
+		select count(1) as tot_cnt
+		from tb_resume tr
+  		join tb_userinfo ui on ui.loginID = tr.loginID
+      left join tb_detail_code td1 ON td1.detail_code = tr.resume_experience and td1.group_code = 'resume_experience'
+      left join tb_detail_code td3 on td3.detail_code = tr.resume_postion and td3.group_code = 'position'
+		where
+			tr.is_delete = 2
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tr.resume_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(experience != null) and ( !''.equals(experience) )">
+				 and td1.detail_code = #{experience} 
+			</if>
+	
+	</select>
+	
+	<!-- 제안(이력서)현황 총 건수 조회 함수 -->
+	<select id="countProposStatus" resultType="int">
+	
+		select count(1) as tot_cnt
+		from tb_resume tr join tb_userinfo ui on tr.loginID = ui.loginID
+		join tb_resume_history trh on trh.resume_no = tr.resume_no
+		join tb_resume_proposal trp on trh.history_no = trp.history_no
+		left join tb_detail_code td1 ON td1.detail_code = trp.proposal_experience and td1.group_code = 'resume_experience'
+		where trh.loginID = #{loginId} and trp.is_delete = 2
+	
+	</select>
+	
+	<!-- 면접 일자 신청 함수 -->
+	<insert id="joboffer">
+	
+		<selectKey resultType="int" keyProperty="proposalno" order="BEFORE">
+			select ifnull(max(proposal_no), 0) + 1 from tb_resume_proposal
+		</selectKey>
+	
+		insert into tb_resume_proposal(proposal_no, proposal_position, proposal_experience, proposal_accept, reg_date, is_delete, proposal_memo
+		                               ,proposal_company, history_no)
+		values (#{proposalno}, #{position}, #{experience}, 1, date_format(Now(), '%Y-%m-%d'), 2, #{memo}, #{loginId}, #{history_no})
+	
+	</insert>
+	
+	<!-- 이력서 열람 기업 등록 함수 -->
+	
+	<insert id="resumeHistory">
+		
+		<selectKey resultType="int" keyProperty="history_no" order="BEFORE">
+			select ifnull(max(history_no), 0) + 1 from tb_resume_history
+		</selectKey>
+		
+		insert into tb_resume_history(history_no, reg_date, loginID, resume_no)
+		value(#{history_no}, date_format(Now(), '%Y-%m-%d'), #{loginId}, #{resume_no})
+	
+	</insert>
+	
+	<!-- 면접 취소  -->
+	<update id="jobcancle">
+	
+		update tb_resume_proposal
+		set is_delete = 1, proposal_accept = 2,
+		    update_date = date_format(Now(), '%Y-%m-%d')
+		where proposal_no = #{proposal_no}
+	
+	</update>
+	
+	<!-- 이력서 상세 보기 및 히스토리 번호 보기 -->
+	
+	<select id="resumeDetail" resultType="hashmap">
+		select
+			  re.resume_no
+			, re.resume_title
+			, re.resume_education
+			, re.resume_school
+			, re.resume_major
+			, re.resume_postion
+			, re.resume_experience
+			, re.resume_hireType
+			, re.resume_location
+			, re.resume_salary
+			, re.resume_letterTitle
+			, CONVERT(resume_letterContent using utf8) resume_letterContent
+			, re.reg_date
+			, re.update_date
+			, re.resume_yn
+			, re.is_delete
+			, re.resume_count
+			, re.loginID
+			, re.file_cd
+			, ui.loginID
+			, ui.name
+			, ui.user_birthday
+			, ui.user_sexuality
+			, ui.user_phone
+			, ui.user_email
+			, ui.user_zipcode
+			, ui.user_address1
+			, ui.user_address2
+			, fe.file_name
+			, fe.file_size
+			, fe.file_nadd
+			, fe.file_madd
+		from
+				 tb_resume re
+	   		join tb_userinfo ui
+	   		on   re.loginID = ui.loginID
+	   		left join tb_file fe
+	   		on   re.file_cd = fe.file_cd
+		 group by 
+		 	resume_no having resume_no = #{resume_no}
+	</select>
+	
+	<select id="proposalno" resultType="hashmap">
+	
+		select IFNULL(max(trp.proposal_no), 0) as proposal_no, trh.history_no, trh.resume_no
+		from tb_resume_history trh left join tb_resume_proposal trp on trh.history_no = trp.history_no
+		where trh.loginID = #{loginId} and trh.resume_no = #{resume_no}
+	
+	</select>
+	
+	<select id="historyno" resultType="int">
+	
+		select max(trh.history_no) as history_no
+		from tb_resume_history trh
+		where trh.loginID = #{loginId} and trh.resume_no = #{resume_no}
+	
+	</select>
+
+</mapper>

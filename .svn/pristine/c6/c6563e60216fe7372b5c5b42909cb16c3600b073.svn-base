@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.happyjob.study.history.dao.HistoryDao">
+
+	<select id="list" parameterType="kr.happyjob.study.history.model.HistoryQueryParam"
+		resultType="kr.happyjob.study.history.model.HistoryResponseDto$History">
+
+		SELECT 
+			a.ad_no adNo,
+			a.ad_title title,
+			CASE
+				WHEN a.ad_experience = '0' THEN '신입'
+        		ELSE concat(a.ad_experience, ' 년차')
+	  		END experience,
+			a.ad_date duedate,
+			DATEDIFF(STR_TO_DATE(ad_date, '%Y-%m-%d'), CURDATE()) daysLeft,
+			company.loginID companyname,
+			coalesce (s.resume_no, false) applied,
+			coalesce (b.ad_no, false) bookmarked,
+			c1.detail_name hireType,
+			c2.detail_name location,
+			c3.detail_name position,
+			c4.detail_name education,
+			c5.detail_name salary,
+			s.reg_date appliedAt,
+			coalesce (a.is_delete != 2, false) deleted,
+			h.reg_date viewedAt,
+			(SELECT COUNT(*)	
+				FROM 
+					tb_ad_history h
+				JOIN 
+					tb_ad a
+				USING 
+					(ad_no)
+				JOIN 
+					tb_userinfo company
+				ON 
+					a.loginID = company.loginID
+				JOIN 
+					tb_detail_code c1 
+				ON 
+					c1.group_code = 'ad_type'
+				AND
+					c1.detail_code = a.ad_type
+				JOIN 
+					tb_detail_code c2
+				ON
+					c2.group_code = 'location'
+				AND
+					c2.detail_code = a.ad_location
+				JOIN 
+					tb_detail_code c3
+				ON 
+					c3.group_code = 'position'
+				AND
+					c3.detail_code = a.ad_position   
+				JOIN 
+					tb_detail_code c4
+				ON 
+					c4.group_code = 'education'
+				AND 
+					c4.detail_code = a.ad_education
+				JOIN
+			      tb_detail_code c5
+			    ON 
+			      c5.group_code = 'resume_salary'
+			    AND
+			      c5.detail_code = a.ad_salary
+				<where>
+					h.loginID = #{loginId}      
+					<if	test="keyword != null  and !''.equals(keyword)">
+						AND a.ad_title LIKE CONCAT('%', #{keyword}, '%')
+					</if>
+				</where>
+	
+			) as totalCount
+
+		FROM
+			tb_ad_history h
+		JOIN 
+			tb_ad a
+		USING
+			(ad_no)
+		LEFT JOIN
+			(SELECT
+				s.resume_no,
+				s.ad_no,
+				s.reg_date
+			FROM
+				tb_resume r
+			JOIN
+				tb_resume_submit s
+			USING
+				(resume_no)
+			WHERE
+				r.loginID = #{loginId}
+			) s
+		ON
+			a.ad_no = s.ad_no
+		LEFT JOIN 
+			(SELECT
+				ad_no
+			FROM 
+				tb_ad_like 
+			WHERE 
+				loginID = #{loginId}
+			AND
+				is_delete = 2
+			) b
+		ON 
+			a.ad_no = b.ad_no
+		JOIN
+			tb_userinfo company
+		ON
+			a.loginID = company.loginID
+		JOIN
+			tb_detail_code c1
+		ON
+			c1.group_code = 'ad_type'
+		AND
+			c1.detail_code = a.ad_type
+		JOIN
+			tb_detail_code c2
+		ON
+			c2.group_code = 'location'
+		AND
+			c2.detail_code = a.ad_location
+		JOIN
+			tb_detail_code c3
+		ON
+			c3.group_code = 'position'
+		AND
+			c3.detail_code = a.ad_position
+		JOIN 
+			tb_detail_code c4
+		ON 
+			c4.group_code = 'education'
+		AND 
+			c4.detail_code = a.ad_education
+		JOIN
+			tb_detail_code c5
+	    ON 
+	    	c5.group_code = 'resume_salary'
+	    AND
+	    	c5.detail_code = a.ad_salary
+		<where>
+			h.loginID = #{loginId}      
+			<if	test="keyword != null  and !''.equals(keyword)">
+				AND a.ad_title LIKE CONCAT('%', #{keyword}, '%')
+			</if>
+		</where>
+		ORDER BY
+			h.reg_date DESC
+		LIMIT 
+			#{pageIndex}, #{pageSize};
+		
+	</select>
+	
+	<select id="getOne" parameterType="kr.happyjob.study.history.model.HistoryRequestDto$Post"
+	resultType="Integer">
+		SELECT DISTINCT
+			history_no
+		FROM 
+			tb_ad_history
+		WHERE 
+			ad_no = #{adNo}
+		AND
+			loginID = #{loginId}
+	
+	</select>
+	
+	<select id="getOldHistories" resultType="Integer">
+		SELECT
+			history_no
+		FROM 
+			tb_ad_history
+		WHERE 
+			STR_TO_DATE(reg_date, '%Y-%m-%d') <![CDATA[<=]]> #{cutoffDate};
+	</select>
+	
+	<update id="deleteOldHistory">
+		DELETE FROM
+			tb_ad_history
+		WHERE history_no = #{historyNo}
+	</update>
+	
+	<insert id="save" parameterType="kr.happyjob.study.history.model.HistoryRequestDto$Post">
+		<selectKey resultType="int" keyProperty="historyNo" order="BEFORE">
+			SELECT
+				IFNULL(MAX(history_no), 0) + 1 
+			FROm
+				tb_ad_history
+		</selectKey>
+		INSERT INTO 
+			tb_ad_history
+			(
+			history_no,
+			reg_date,
+			ad_no,
+			loginID
+			)
+		VALUES
+			(
+			#{historyNo},
+			CURDATE(),
+			#{adNo},
+			#{loginId}
+			)
+	</insert>
+	
+</mapper>

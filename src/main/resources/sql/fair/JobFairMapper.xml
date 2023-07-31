@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.fair.dao.JobFairDao">
+
+	<select id="jobFairlist" resultType="kr.happyjob.study.fair.model.JobFairModel">
+	
+		select tf.fair_no , tf.fair_title, tf.fair_location, tf.fair_startdate, tf.fair_enddate, tf.is_delete
+			   , td1.detail_name as location, td1.detail_code, tf.loginID as id
+		from tb_fair tf left join tb_detail_code td1 ON td1.detail_code = tf.fair_location and td1.group_code = 'location'
+		where tf.is_delete = 2
+		<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tf.fair_title Like CONCAT('%', #{srctitle}, '%')
+		</if>
+		<if test="(region != null) and ( !''.equals(region) )">
+				 and td1.detail_code = #{region} 
+		</if>
+		order by tf.fair_no desc
+		limit #{pageindex}, #{pageSize}
+	
+	</select>
+	
+	<select id="countJobFairList" resultType="int">
+	
+		select count(1) as tot_cnt
+		from tb_fair tf left join tb_detail_code td1 ON td1.detail_code = tf.fair_location and td1.group_code = 'location'
+		where tf.is_delete = 2
+		<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tf.fair_title Like CONCAT('%', #{srctitle}, '%')
+		</if>
+		<if test="(region != null) and ( !''.equals(region) )">
+				 and td1.detail_code = #{region} 
+		</if>
+	
+	</select>
+	
+	<!-- 박람회 상세 보기 -->
+	
+	<select id="JobFairDetail" resultType="hashmap">
+	
+		select
+			  tf.fair_no
+			, tf.fair_title
+			, tf.fair_address1
+			, tf.fair_address2
+			, tf.fair_startdate
+			, tf.fair_enddate
+			, tf.fair_name
+			, tf.fair_userNum
+			, ui.user_phone
+			, ui.user_email
+			, tf.is_delete
+			, exists(select 1 from tb_fair_join where fair_no = tf.fair_no and loginID = #{loginId}) as exist_yn
+			, fe.file_name
+			, fe.file_size
+			, fe.file_nadd
+			, fe.file_madd
+		from
+				 tb_fair tf
+	   		join tb_userinfo ui
+	   		on   tf.loginID = ui.loginID
+	   		left join tb_file fe
+	   		on   tf.file_cd = fe.file_cd
+		 where tf.fair_no = #{fair_no}
+		 	
+	</select>
+	
+	<!-- 박람회 신청하기 -->
+	
+	<insert id="jobFair">
+	
+		<selectKey resultType="int" keyProperty="join_id" order="BEFORE">
+		
+			select ifnull(max(join_id), 0) + 1 from tb_fair_join
+			
+		</selectKey>
+		
+		insert into tb_fair_join(join_id, reg_date, is_delete, fair_no, loginID)
+		
+		values (#{join_id}, date_format(Now(), '%Y-%m-%d'), 2, #{fair_no}, #{loginId})
+	
+	</insert>
+	
+	<!-- 박람회 수용 인원 변경하기 -->
+	
+	<update id="udpateJobFair">
+	
+		update tb_fair 
+		set fair_userNum = fair_userNum - 1,
+		    update_date = date_format(Now(), '%Y-%m-%d')
+		where fair_no = #{fair_no}
+	
+	</update>
+	
+	<!-- 박람회 신청 메일 보내기 -->
+	<insert id="sendMail">
+	
+		<selectKey resultType="int" keyProperty="mailno" order="BEFORE"> <!-- 기본키가 int 타입일때 자동 증가 함수 -->
+			select ifnull(max(mail_no), 0) + 1 from tb_mail
+		</selectKey>
+	
+		insert into tb_mail(
+			mail_no,
+			mail_title,
+			mail_content,
+			read_yn,
+			reg_date,
+			is_delete,
+			loginID,
+			mail_other
+		)
+		values(
+			#{mailno},
+			#{mail_title},
+			#{mail_content},
+			2,
+			date_format(Now(), '%Y-%m-%d'),
+			2,
+			#{id},
+			#{mailother}
+		)
+		
+	</insert>
+
+</mapper>

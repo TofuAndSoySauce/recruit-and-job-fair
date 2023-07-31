@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.community.dao.QnaDao">
+
+   <!-- qna 목록조회 -->
+   <select id="qnaList" resultType="kr.happyjob.study.community.model.QnalistDTO" parameterType="kr.happyjob.study.community.model.QnaDTO">
+      SELECT tq.qna_no
+          , tq.reg_date
+          , tq.qna_title
+          , tq.qna_answer
+          , case 
+          when tu.user_type = 'A' then '관리자'
+          when tu.user_type = 'B' then '기업'
+          else '개인' 
+           END as user_type
+        FROM tb_qna tq
+   INNER JOIN tb_userinfo tu on tq.loginID = tu.loginID 
+        <where>
+         <if test="(qna_title != null) and ( !''.equals(qna_title) )">
+            and tq.qna_title Like CONCAT('%', #{qna_title}, '%')
+         </if>
+         <if test="(start_date != null) and ( !''.equals(start_date) )">
+            and tq.reg_date <![CDATA[>=]]>
+            #{start_date}
+         </if>
+         <if test="(end_date != null) and ( !''.equals(end_date) )">
+            and tq.reg_date <![CDATA[<=]]>
+            #{end_date}
+         </if>
+         and tq.is_delete = 2
+        </where>
+      order by
+      tq.qna_no desc
+      limit #{pageIndex}, #{pageSize}
+   </select>
+   
+   <select id="countQnaList" resultType="int">
+      SELECT count(*) as cnt
+        FROM tb_qna tq
+   INNER JOIN tb_userinfo tu on tq.loginID = tu.loginID 
+        <where>
+         <if test="(qna_title != null) and ( !''.equals(qna_title) )">
+            and tq.qna_title Like CONCAT('%', #{qna_title}, '%')
+         </if>
+         <if test="(start_date != null) and ( !''.equals(start_date) )">
+            and tq.reg_date <![CDATA[>=]]>
+            #{start_date}
+         </if>
+         <if test="(end_date != null) and ( !''.equals(end_date) )">
+            and tq.reg_date <![CDATA[<=]]>
+            #{end_date}
+         </if>
+         and tq.is_delete = 2
+        </where>
+      order by
+      tq.qna_no desc
+   </select>
+   
+   
+   <!-- 등록 -->
+   <insert id="qnaInsert" parameterType="kr.happyjob.study.community.model.QnaModel">
+      <selectKey resultType="int" keyProperty="qna_no" order="BEFORE">
+         select ifnull(max(qna_no), 0) + 1 from tb_qna
+      </selectKey>
+      INSERT INTO tb_qna
+      VALUES (
+         #{qna_no}
+         , #{qna_title}
+         , #{qna_content}
+         , 1
+         , date_format(Now(), '%Y-%m-%d')
+         , date_format(Now(), '%Y-%m-%d')
+         , 2
+         , #{loginID}
+      <choose>
+         <when test="file_cd gt 0">
+         , #{file_cd}
+         </when>
+         <otherwise>
+         , null
+         </otherwise>
+      </choose>   
+      )
+   </insert>
+   
+   <!-- 상세조회 -->
+   <select id="qnaDetail" resultType="kr.happyjob.study.community.model.QnalistDTO" parameterType="int">
+      select 
+        tq.qna_title
+      , tq.qna_content
+      , tq.qna_no
+      , tq.loginID
+      , tqc.comment_content
+      , tqc.reg_date
+      , tf.file_cd
+      , tf.file_name
+      , tf.file_nadd
+      , tf.file_madd
+   from tb_qna tq 
+   inner join tb_userinfo ui 
+      on tq.loginID = ui.loginID
+   left join tb_file tf
+      on tq.file_cd = tf.file_cd
+    left join tb_qna_comment tqc
+        on tq.qna_no = tqc.qna_no
+   where tq.qna_no = #{qna_no}
+   </select>
+   
+   <!-- 삭제 -->
+   <update id="qnaDelete" parameterType="int">
+      update tb_qna
+         set
+            is_delete = 1
+      where qna_no = #{qna_no}
+      
+   </update>
+   
+   <!-- 수정 -->
+   <update id="qnaUpdate" parameterType="kr.happyjob.study.community.model.QnaModel">
+      update tb_qna
+         set
+            qna_title = #{qna_title}
+            , qna_content = #{qna_content}
+         <choose>
+            <when test="file_cd gt 0">
+            , file_cd = #{file_cd}
+            </when>
+            <otherwise>
+            , file_cd = null
+            </otherwise>
+         </choose>
+      where qna_no = #{qna_no}
+   </update>
+   
+   <!-- 댓글등록 -->
+   <insert id="insertComment" parameterType="kr.happyjob.study.community.model.QnaCommentModel" >
+      <selectKey resultType="int" keyProperty="comment_no" order="BEFORE">
+            select ifnull(max(comment_no), 0) + 1 from tb_qna_comment
+      </selectKey>
+      INSERT INTO tb_qna_comment
+         VALUES (
+            #{comment_no}
+            , #{comment_content}
+            , date_format(Now(), '%Y-%m-%d')
+            , date_format(Now(), '%Y-%m-%d')
+            , 2
+            , #{qna_no}
+            , #{loginID}
+         )
+   </insert>
+   
+   <!-- 댓글중복 -->
+   <select id="searchComment" resultType="kr.happyjob.study.community.model.QnaCommentModel" parameterType="kr.happyjob.study.community.model.QnaCommentModel">
+      SELECT * 
+        FROM tb_qna_comment 
+       WHERE qna_no=#{qna_no}
+   </select>
+   
+   <!-- 댓글수정 -->
+   <update id="updateComment" parameterType="kr.happyjob.study.community.model.QnaCommentModel">
+      UPDATE tb_qna_comment
+         SET
+            comment_content = #{comment_content},
+            update_date = date_format(Now(), '%Y-%m-%d')
+      WHERE qna_no = #{qna_no}
+   </update>
+   
+   <!-- 댓글답변여부 -->
+   <update id="qnaAnswer" parameterType="kr.happyjob.study.community.model.QnaCommentModel">
+      UPDATE tb_qna
+         SET
+         qna_answer = 2
+      WHERE qna_no = #{qna_no}
+   </update>
+
+   <!-- 파일 시퀀스 체크 -->   
+   <select id="fileCdCheck" resultType="int">
+      select
+         ifnull(max(file_cd),0) + 1
+      FROM tb_file
+   </select>
+   
+   <insert id="qnaFileInsert">
+      INSERT INTO tb_file
+      (
+        file_cd
+      , file_type
+      , file_size
+      , file_name
+      , file_nadd
+      , file_madd
+      ) values (
+        #{file_cd}
+      , #{file_type}
+      , #{file_size}
+      , #{file_name}
+      , #{file_nadd}
+      , #{file_madd}
+      )
+   </insert>
+   
+   <update id="qnaFileUpdate">
+      update tb_file
+         set
+             file_type = #{file_type}
+      ,      file_size = #{file_size}
+      ,      file_name = #{file_name}
+      ,      file_nadd = #{file_nadd}
+      ,      file_madd = #{file_madd}
+      where   file_cd = #{file_cd}
+   </update>
+   
+   <!-- 페이징 -->
+   <!-- <select id="countqnalist" resultType="int">
+      select
+         count(1) as tot_cnt
+      from
+      tb_qna tq
+
+      where
+         1=1
+         <if test="(qna_title != null) and ( !''.equals(qna_title) )">
+            and tq.qna_title Like CONCAT('%', #{qna_title}, '%')
+         </if>
+         <if test="(start_date != null) and ( !''.equals(start_date) )">
+            and tq.reg_date <![CDATA[>=]]>
+            #{start_date}
+         </if>
+         <if test="(end_date != null) and ( !''.equals(end_date) )">
+            and tq.reg_date <![CDATA[<=]]>
+            #{end_date}
+         </if>
+   </select> -->
+   
+   
+</mapper>

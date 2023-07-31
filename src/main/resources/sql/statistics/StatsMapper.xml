@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.statistics.dao.StatsDao">
+<!-- 기업회원 게시판 목록조회 -->
+<select id = "statslist" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select 
+	tu.loginID loginID2, 
+	tu.name name2, 
+	tdct.detail_name adtype, 
+	tdcex.detail_name adexp, 
+	tdced.detail_name adedu, 
+	tdcsa.detail_name adsal, 
+	ta.reg_date regdat,
+	ta.ad_date addat, 
+	tdcst.detail_name adstat, 
+	tu.is_delete is_delete2
+from tb_userinfo tu 
+	join tb_ad ta
+	on tu.loginID = ta.loginID
+	join tb_detail_code tdct
+	on ta.ad_type = tdct.detail_code and tdct.group_code= 'ad_type' 
+	join tb_detail_code tdcex
+	on ta.ad_type = tdcex.detail_code and tdcex.group_code= 'resume_experience' 
+	join tb_detail_code tdcsa
+	on ta.ad_type = tdcsa.detail_code and tdcsa.group_code= 'resume_salary' 
+	join tb_detail_code tdced
+	on ta.ad_type = tdced.detail_code and tdced.group_code= 'education' 
+	join tb_detail_code tdcst
+	on ta.ad_type = tdcst.detail_code and tdcst.group_code= 'ad_status' 
+where user_type = 'B'
+	<if test="(nm_search != null) and ( !''.equals(nm_search) )">
+		and tu.name Like CONCAT('%', #{nm_search}, '%')
+	</if>
+	limit #{pageindex}, #{pageSize}
+</select>
+<!-- 기업회원 게시판 카운트리스트 -->
+<select id="countstatslist" resultType="int">
+	select
+	count(1) as tot_cnt2  
+from tb_userinfo tu 
+join tb_ad ta
+	on tu.loginID = ta.loginID
+	join tb_detail_code tdct
+	on ta.ad_type = tdct.detail_code and tdct.group_code= 'ad_type' 
+	join tb_detail_code tdcex
+	on ta.ad_type = tdcex.detail_code and tdcex.group_code= 'resume_experience' 
+	join tb_detail_code tdcsa
+	on ta.ad_type = tdcsa.detail_code and tdcsa.group_code= 'resume_salary' 
+	join tb_detail_code tdced
+	on ta.ad_type = tdced.detail_code and tdced.group_code= 'education' 
+	join tb_detail_code tdcst
+	on ta.ad_type = tdcst.detail_code and tdcst.group_code= 'ad_status' 
+where user_type = 'B'
+	<if test="(nm_search != null) and ( !''.equals(nm_search) )">
+		and tu.name Like CONCAT('%', #{nm_search}, '%')
+	</if>
+</select>
+<!-- ================================================================= -->
+<!-- 기업별 통계조회 -->
+<!-- 통계 전체기업 선호도, column chart -->
+<!-- <select id = "statscol" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select 
+	100*count(tal.like_no)/ifnull(s.grp_cnt,1) pct , tu.name ent 
+from tb_ad_like tal
+	cross join (select sum(a.cnt) as grp_cnt from (select count(tal.like_no) as cnt from tb_ad_like tal group by tal.loginID) as a) as s
+	join tb_userinfo tu
+	on tal.loginID = tu.loginID
+group by tal.loginID
+</select> -->
+<!-- tb_ad_like loginID 때문에(기업 -> 개인) 재작성  -->
+<select id = "statscol" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select 
+	count(tu.name)/ifnull(s.grp_cnt,1) pct, tu.name ent 
+from tb_ad ta
+	cross join (select sum(a.cnt) as grp_cnt from (select count(tal.ad_no) as cnt, ta.loginID from tb_ad_like tal 
+	join tb_ad ta on ta.ad_no = tal.ad_no group by ta.loginID) as a) as s
+	join tb_userinfo tu
+	on ta.loginID = tu.loginID
+	join tb_ad_like tal
+	on ta.ad_no = tal.ad_no
+group by ta.loginID
+</select>
+
+
+
+<!-- 통계 기업별 연령&성별, barchart -->
+<!-- 초기 입력값은, 테이블에 데이터가 있을 때, 1번 Row의 기업명 -->
+<select id = "statsbar" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select tu2.name ent2, 
+	case when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '1%' then '10'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '2%' then '20'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '3%' then '30'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '4%' then '40'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '5%' then '50'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '6%' then '60'
+		else 'na'
+	end as age_c,
+	count(case when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '1%' then '10'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '2%' then '20'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '3%' then '30'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '4%' then '40'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '5%' then '50'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '6%' then '60'
+		else 'na' end) as age_cnt,
+		tdc.detail_name sex_c
+from tb_resume_submit trs
+	join tb_resume tr
+	on trs.resume_no = tr.resume_no
+	join tb_ad tad
+	on trs.ad_no = tad.ad_no
+	join tb_userinfo tu
+	on tr.loginID = tu.loginID
+	join tb_detail_code tdc
+	on tu.user_sexuality = tdc.detail_code and tdc.group_code = 'user_sexuality'
+	join tb_userinfo tu2
+	on tad.loginID = tu2.loginID
+where tad.loginID = (select tad.loginID from tb_resume_submit trs
+		join tb_resume tr on trs.resume_no = tr.resume_no
+		join tb_ad tad on trs.ad_no = tad.ad_no
+		join tb_userinfo tu on tr.loginID = tu.loginID
+		join tb_userinfo tu2 on tad.loginID = tu2.loginID limit 1)
+group by case when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '1%' then '10'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '2%' then '20'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '3%' then '30'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '4%' then '40'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '5%' then '50'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '6%' then '60'
+	else 'na' end, tdc.detail_name
+</select>
+<!-- 화면에서 클릭했을 때의 기업명을 입력으로 받는 barchart -->
+<select id = "statsbar2" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select tu2.name ent2_2, 
+	case when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '1%' then '10'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '2%' then '20'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '3%' then '30'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '4%' then '40'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '5%' then '50'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '6%' then '60'
+		else 'na'
+	end as age_c2,
+	count(case when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '1%' then '10'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '2%' then '20'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '3%' then '30'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '4%' then '40'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '5%' then '50'
+		when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '6%' then '60'
+		else 'na' end) as age_cnt2,
+		tdc.detail_name sex_c2
+from tb_resume_submit trs
+	join tb_resume tr
+	on trs.resume_no = tr.resume_no
+	join tb_ad tad
+	on trs.ad_no = tad.ad_no
+	join tb_userinfo tu
+	on tr.loginID = tu.loginID
+	join tb_detail_code tdc
+	on tu.user_sexuality = tdc.detail_code and tdc.group_code = 'user_sexuality'
+	join tb_userinfo tu2
+	on tad.loginID = tu2.loginID
+where tad.loginID = #{loginID_input}
+group by case when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '1%' then '10s'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '2%' then '20'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '3%' then '30'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '4%' then '40'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '5%' then '50'
+	when ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) like '6%' then '60'
+	else 'na' end, tdc.detail_name
+</select>
+<!-- ================================================================= -->
+<!-- 박람회 통계 조회 -->
+<!-- 박람회 게시판 목록조회 -->
+<select id = "statslist2" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select 
+	tbf.fair_no fno, 
+	tbf.fair_title fttl, 
+	tdc.detail_name floc, 
+	tbf.fair_startdate fst, 
+	tbf.fair_enddate fed, 
+	tdc2.detail_name facn,
+	tbf.fair_userNum faun
+from tb_fair tbf
+	join tb_detail_code tdc
+	on tbf.fair_location = tdc.detail_code and tdc.group_code = 'location'
+	join tb_detail_code tdc2
+	on tbf.fair_companyNum = tdc2.detail_code and tdc2.group_code = 'fair_companyNum'
+	<if test="(nm_search2 != null) and ( !''.equals(nm_search2) )">
+		where tbf.fair_title Like CONCAT('%', #{nm_search2}, '%')
+	</if>
+	limit #{pageindex}, #{pageSize}
+</select>
+<!-- 박람회 게시판 카운트리스트 -->
+<select id="countstatslist2" resultType="int">
+select count(1)
+from tb_fair tbf
+	join tb_detail_code tdc
+	on tbf.fair_location = tdc.detail_code and tdc.group_code = 'location'
+	join tb_detail_code tdc2
+	on tbf.fair_companyNum = tdc2.detail_code and tdc2.group_code = 'fair_companyNum'
+	<if test="(nm_search2 != null) and ( !''.equals(nm_search2) )">
+		where tbf.fair_title Like CONCAT('%', #{nm_search2}, '%')
+	</if>
+</select>
+<!-- 박람회별 개인 성별, pie chart -->
+<!-- 초기값 : 해당 테이블 Row 1 -->
+<select id = "statspie1" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select 
+	tfj.fair_no fno2, 
+	tdc.detail_name sex_fc, 
+	count(tu.user_sexuality) sex_fcnt 
+from tb_fair_join tfj
+	join tb_fair tfa
+	on tfj.fair_no = tfa.fair_no
+	join tb_userinfo tu
+	on tfj.loginID = tu.loginID
+	join tb_detail_code tdc
+	on tu.user_sexuality = tdc.detail_code and tdc.group_code = 'user_sexuality'
+where tu.user_sexuality is not null and tfj.fair_no = (select 
+	tbf.fair_no fno
+from tb_fair tbf
+	join tb_detail_code tdc
+	on tbf.fair_location = tdc.detail_code and tdc.group_code = 'location'
+	join tb_detail_code tdc2
+	on tbf.fair_companyNum = tdc2.detail_code and tdc2.group_code = 'fair_companyNum' limit 1)
+group by tu.user_sexuality
+</select>
+<!-- 화면에서 클릭했을 때의 박람회 번호를 입력으로 받음 -->
+<select id = "statspie1_2" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select 
+	tfj.fair_no fno2_2, 
+	tdc.detail_name sex_fc2, 
+	count(tu.user_sexuality) sex_fcnt2 
+from tb_fair_join tfj
+	join tb_fair tfa
+	on tfj.fair_no = tfa.fair_no
+	join tb_userinfo tu
+	on tfj.loginID = tu.loginID
+	join tb_detail_code tdc
+	on tu.user_sexuality = tdc.detail_code and tdc.group_code = 'user_sexuality'
+where tu.user_sexuality is not null and tfj.fair_no = #{fno_input}
+group by tu.user_sexuality
+</select>
+<!-- 박람회별 기업 규모, pie chart -->
+<!-- 초기값 : 해당 테이블 Row 1 -->
+<select id = "statspie2" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select 
+	tfj.fair_no fno3, 
+	tdc.detail_name c_size, 
+	count(tdc.detail_name) c_cnt 
+from tb_fair_join tfj
+	join tb_fair tfa
+	on tfj.fair_no = tfa.fair_no
+	join tb_userinfo tu
+	on tfj.loginID = tu.loginID
+	join tb_detail_code tdc
+	on tu.user_company_size = tdc.detail_code and tdc.group_code = 'company_size'
+where tu.user_type = 'B' and tfj.fair_no = (select 
+	tfj.fair_no fno3
+from tb_fair_join tfj
+	join tb_fair tfa
+	on tfj.fair_no = tfa.fair_no
+	join tb_userinfo tu
+	on tfj.loginID = tu.loginID
+	join tb_detail_code tdc
+	on tu.user_company_size = tdc.detail_code and tdc.group_code = 'company_size' limit 1)
+group by tdc.detail_name
+</select>
+<!-- 박람회별 기업 규모, pie chart -->
+<!-- 화면에서 클릭했을 때의 박람회 번호를 입력으로 받음 -->
+<select id = "statspie2_2" resultType="kr.happyjob.study.statistics.model.StatsModel">
+select 
+	tfj.fair_no fno3_2, 
+	tdc.detail_name c_size2, 
+	count(tdc.detail_name) c_cnt2
+from tb_fair_join tfj
+	join tb_fair tfa
+	on tfj.fair_no = tfa.fair_no
+	join tb_userinfo tu
+	on tfj.loginID = tu.loginID
+	join tb_detail_code tdc
+	on tu.user_company_size = tdc.detail_code and tdc.group_code = 'company_size'
+where tu.user_type = 'B' and tfj.fair_no = #{fno_input}
+group by tdc.detail_name
+</select>
+<!-- ================================================================= -->
+</mapper>

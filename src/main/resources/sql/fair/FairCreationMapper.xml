@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.fair.dao.FairCreationDao">
+
+	<!-- 목록생성  -->
+	<insert id="fairSave">
+		<selectKey resultType="int" keyProperty="fairNo" order="BEFORE">
+			select ifnull(max(fair_no), 0) + 1
+             from tb_fair
+		</selectKey>
+		insert 
+			into tb_fair
+				(
+				fair_no
+				,fair_title
+				,fair_zipcode
+				,fair_address1
+				,fair_address2
+				,fair_startdate
+				,fair_enddate
+				,fair_userNum
+				,fair_location
+				,reg_date
+				,is_delete
+				,loginID
+				,fair_name
+				,fair_companyNum
+				,file_cd
+				)
+		values (
+				#{fairNo}
+				,#{fairname}
+				,#{zip_code}
+				,#{addr}
+				,#{detAddr}
+				,#{startdate}
+				,#{enddate}
+				,#{userNum}
+				,#{location}
+				,date_format(now(),"%Y-%m-%d")
+				,2
+				,#{loginId}
+				,#{userNm}
+				,#{booth}
+				,#{filecd}
+				)	
+	</insert>
+	
+	<!-- 파일 저장 -->
+	<insert id="fileNewSave">
+		insert into tb_file
+		(
+		file_cd
+		,file_type
+		,file_size
+		,file_name
+		,file_nadd
+		,file_madd
+		) values (
+		#{filecd}
+		,#{file_type}
+		,#{file_size}
+		,#{file_name}
+		,#{file_nadd}
+		,#{file_madd}
+		)
+	</insert>
+		
+	<!-- 파일 코드 생성 -->
+	<select id="fileCdCheck" resultType="int">
+		select
+			ifnull(max(file_cd),0) + 1
+		FROM tb_file
+	</select>
+	
+	<update id="updateIsDelete">
+		update tb_fair
+		set is_delete = '1' 
+		where fair_enddate <![CDATA[<]]> date_format(now(),"%Y-%m-%d")
+	</update>
+	
+	<select id="creationList" resultType="kr.happyjob.study.fair.model.FairCreationModel">
+		select 
+		tf.fair_no
+		,tf.fair_title
+		,tf.fair_startdate
+		,tf.fair_enddate
+		,tf.fair_location 
+    	,dc1.detail_name addr
+    	,dc2.detail_name type
+    	,tf.fair_companyNum
+		,tf.is_delete
+		from tb_fair tf
+	    join tb_detail_code dc1 on dc1.group_code="location" and dc1.detail_code = tf.fair_location
+	    join tb_detail_code dc2 on dc2.group_code="fair_companyNum" and dc2.detail_code = tf.fair_companyNum
+		order by fair_no desc
+		limit #{pageindex}, #{pageSize}
+	</select>
+	
+	<select id="countcreationlist" resultType="int">
+		select count(*) from tb_fair tf
+		join tb_detail_code dc1 on dc1.group_code="location" and dc1.detail_code = tf.fair_location
+	    join tb_detail_code dc2 on dc2.group_code="fair_companyNum" and dc2.detail_code = tf.fair_companyNum
+	</select>
+	
+</mapper>

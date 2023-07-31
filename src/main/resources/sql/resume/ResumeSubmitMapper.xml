@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.resume.dao.ResumeSubmitDao">
+
+
+	<!-- 공고리스트 -->
+	<select id="resumeAdList" resultType="kr.happyjob.study.resume.model.ResumeAdListDTO"  parameterType="kr.happyjob.study.resume.model.ResumeAdListDTO">
+		SELECT
+		 	  ta.ad_no
+			, ta.ad_title
+			, ta.ad_position
+			, tdc.detail_name as ad_position_nm
+			, ta.ad_type
+			, tdd.detail_name as ad_type_nm
+			, ta.ad_date
+		FROM
+	   		  tb_ad ta
+	   LEFT JOIN tb_detail_code tdc ON tdc.detail_code = ta.ad_position AND tdc.group_code = 'position'
+	   LEFT JOIN tb_detail_code tdd ON tdd.detail_code = ta.ad_type AND tdd.group_code = 'ad_type'
+   	   WHERE ta.loginID = #{loginID}
+			<if test="(resumeAd_title != null) and ( !''.equals(resumeAd_title) )">
+				and ta.ad_title Like CONCAT('%', #{resumeAd_title}, '%')
+			</if>
+			<if test="(start_date != null) and ( !''.equals(start_date) )">
+				and ta.reg_date <![CDATA[>=]]>
+				#{start_date}
+			</if>
+			<if test="(end_date != null) and ( !''.equals(end_date) )">
+				and ta.reg_date <![CDATA[<=]]>
+				#{end_date}
+			</if>
+			and ta.is_delete = 2
+			and ta.ad_yn = 3
+			and ta.ad_status = 1
+		order by
+		ta.ad_no desc
+		limit #{pageIndex}, #{pageSize}
+	</select>
+
+	<select id="countResumeAdList" parameterType="kr.happyjob.study.resume.model.ResumeAdListDTO" resultType="int">
+		SELECT count(*) as cnt
+		FROM
+	   		  tb_ad ta
+	   LEFT JOIN tb_detail_code tdc ON tdc.detail_code = ta.ad_position AND tdc.group_code = 'position'
+	   LEFT JOIN tb_detail_code tdd ON tdd.detail_code = ta.ad_type AND tdd.group_code = 'ad_type'
+   	   WHERE ta.loginID = #{loginID}
+			<if test="(resumeAd_title != null) and ( !''.equals(resumeAd_title) )">
+				and ta.ad_title Like CONCAT('%', #{resumeAd_title}, '%')
+			</if>
+			<if test="(start_date != null) and ( !''.equals(start_date) )">
+				and ta.reg_date <![CDATA[>=]]>
+				#{start_date}
+			</if>
+			<if test="(end_date != null) and ( !''.equals(end_date) )">
+				and ta.reg_date <![CDATA[<=]]>
+				#{end_date}
+			</if>
+			and ta.is_delete = 2
+			and ta.ad_yn = 3
+			and ta.ad_status = 1
+	</select>
+
+	<!-- 이력서 리스트 -->
+	<select id = "resumeSubmitList" resultType="kr.happyjob.study.resume.model.ResumeListDTO" parameterType="kr.happyjob.study.resume.model.ResumeListDTO">
+		select
+			trs.submit_no
+			,tr.resume_title
+			,tu.name
+			,tr.resume_experience
+			,tdc.detail_name
+			,trs.interview_yn
+			,tdd.detail_name as interview_yn_nm
+			,trs.reg_date
+			,trs.submit_status
+			,tde.detail_name as submit_status_nm
+			,trs.submit_interviewdate
+			,trs.submit_interviewtime
+		from tb_resume_submit trs
+	inner join tb_resume tr ON tr.resume_no = trs.resume_no
+	inner join tb_userinfo tu ON tu.loginID = tr.loginID
+	left join tb_detail_code tdc on tdc.detail_code = tr.resume_experience AND tdc.group_code = 'resume_experience'
+	left join tb_detail_code tdd on tdd.detail_code = trs.interview_yn AND tdd.group_code = 'interview_yn'
+	left join tb_detail_code tde on tde.detail_code = trs.submit_status AND tde.group_code = 'submit_status'
+	
+	where trs.ad_no = #{ad_no}
+	ORDER BY 
+	trs.submit_no desc
+	limit #{pageIndex}, #{pageSize}
+	</select> 
+
+	<select id = "countResumeSubmitList" resultType="int" parameterType="kr.happyjob.study.resume.model.ResumeListDTO">
+		select count(*) as cnt
+		from tb_resume_submit trs
+	inner join tb_resume tr ON tr.resume_no = trs.resume_no
+	inner join tb_userinfo tu ON tu.loginID = tr.loginID
+	left join tb_detail_code tdc on tdc.detail_code = tr.resume_experience AND tdc.group_code = 'resume_experience'
+	left join tb_detail_code tdd on tdd.detail_code = trs.interview_yn AND tdd.group_code = 'interview_yn'
+	left join tb_detail_code tde on tde.detail_code = trs.submit_status AND tde.group_code = 'submit_status'
+	where trs.ad_no = #{ad_no}
+	</select> 
+
+
+
+	<select id="resumeApplicant" parameterType="int" resultType="kr.happyjob.study.resume.model.ResumeAppliDTO">
+	select re.resume_no
+			, re.resume_title
+      , re.resume_education
+      , ta.detail_name as resume_education_nm
+			, re.resume_school
+			, re.resume_major
+      , te.detail_name as resume_major_nm
+			, re.resume_postion
+      , tc.detail_name as resume_postion_nm
+			, re.resume_experience
+      , td.detail_name as resume_experience_nm
+			, re.resume_hireType
+      , ta.detail_name as resume_hireType_nm
+			, re.resume_location
+      , tg.detail_name as resume_location_nm
+			, re.resume_salary
+      , tf.detail_name as resume_salary_nm
+			, re.resume_letterTitle
+			, CONVERT(resume_letterContent using utf8) resume_letterContent
+			, re.reg_date
+			, re.update_date
+			, re.resume_yn
+			, re.is_delete
+			, re.resume_count
+			, re.loginID
+			, re.file_cd
+			, ui.name
+			, ui.user_birthday
+			, ui.user_sexuality
+      , th.detail_name as user_sexuality_nm
+			, ui.user_phone
+			, ui.user_email
+			, ui.user_zipcode
+			, ui.user_address1
+			, ui.user_address2
+			, fe.file_name
+			, fe.file_size
+			, fe.file_nadd
+			, fe.file_madd
+			, trs.interview_yn
+			, trs.submit_interviewdate
+			, trs.submit_interviewtime
+		from
+			tb_resume re
+		INNER JOIN tb_resume_submit trs ON trs.resume_no = re.resume_no
+	   		join tb_userinfo ui
+	   		on   re.loginID = ui.loginID
+	   		left join tb_file fe
+	   		on   re.file_cd = fe.file_cd
+	LEFT JOIN tb_detail_code ta ON ta.detail_code = re.resume_hiretype AND ta.group_code = 'ad_type'
+	LEFT JOIN tb_detail_code tb ON tb.detail_code = re.resume_education AND tb.group_code = 'education'
+	LEFT JOIN tb_detail_code tc ON tc.detail_code = re.resume_postion AND tc.group_code = 'position'
+	LEFT JOIN tb_detail_code td ON td.detail_code = re.resume_experience AND td.group_code = 'resume_experience'
+	LEFT JOIN tb_detail_code te ON te.detail_code = re.resume_major AND te.group_code = 'resume_major'
+	LEFT JOIN tb_detail_code tf ON tf.detail_code = re.resume_salary AND tf.group_code = 'resume_salary'
+	LEFT JOIN tb_detail_code tg ON tg.detail_code = re.resume_location AND tg.group_code = 'location'
+	LEFT JOIN tb_detail_code th ON th.detail_code = ui.user_sexuality AND th.group_code = 'user_sexuality'
+		where
+			trs.submit_no = #{submit_no}
+	</select>
+	
+	<!-- 불합격 -->
+	<update id="resumeResult" parameterType="int">
+		update tb_resume_submit SET
+  		 submit_status = 2
+  		 , interview_yn = 3
+   		where submit_no = #{submit_no}
+	</update>
+	
+	<!-- 합격 -->
+	<update id="resumePassResult" parameterType="int">
+		update tb_resume_submit SET
+  		 submit_status = 1
+  		 , interview_yn = 3
+   		where submit_no = #{submit_no}
+	</update>
+	
+	<!-- 면접일정등록 -->
+	<update id="interviewUpdateDate" parameterType="kr.happyjob.study.resume.model.ResumeSubmitModel">
+		UPDATE tb_resume_submit SET
+		   submit_interviewdate = #{submit_interviewdate}
+		 , submit_interviewtime = #{submit_interviewtime}
+		 , interview_yn = 2
+		 WHERE submit_no = #{submit_no}
+	</update>
+
+</mapper>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.fair.dao.JobFairBoothApplicationDao">
+	<!-- 박람회 리스트 -->
+	<select id="jobFairBoothApplicationList"
+		resultType="kr.happyjob.study.fair.model.JobFairBoothApplicationModel">
+		SELECT tfa.loginID,
+		tfa.fair_no AS id,
+		tfa.fair_title AS title,
+		ifnull(tfa.fair_startdate, '-') AS startDate,
+		ifnull(tfa.fair_enddate, '-') AS endDate,
+		ifnull(tfa.fair_address1, '-') AS address1,
+		ifnull(tfa.fair_name, '-') AS name,
+		ifnull(tfa.is_delete, '-') AS isDelete,
+		ifnull(ui.user_phone, '-') AS phone,
+		EXISTS(select 1 from tb_fair_join where fair_no = id group by loginID having
+		loginID = #{loginId}) as joined
+		FROM tb_fair tfa
+		JOIN tb_userinfo ui ON
+		tfa.loginID = ui.loginID
+		WHERE tfa.is_delete = 2
+		<if test="(srctitle != null) and ( !''.equals(srctitle) )"> 
+			and fair_title Like CONCAT('%', #{srctitle}, '%') 
+		</if>
+		order by
+		fair_no desc
+		limit
+		#{pageindex}, #{pageSize}
+	</select>
+
+	<!-- 박람회 테이블의 데이터 수 -->
+	<select id="countJobFairBoothApplicationList" resultType="int">
+		SELECT count(1) AS tot_cnt
+		FROM tb_fair
+		WHERE is_delete = 2
+		<if test="(srctitle != null) and ( !''.equals(srctitle) )"> and fair_title
+			Like CONCAT('%', #{srctitle}, '%') </if>
+	</select>
+
+	<!-- 박람회상세페이지 -->
+	<select id="jobFairBoothApplicationDetail"
+		resultType="kr.happyjob.study.fair.model.JobFairBoothApplicationModel">
+		SELECT tfa.loginID,
+		tfa.fair_no AS id,
+		tfa.fair_title AS
+		title,
+		ifnull(tfa.fair_content, '-') AS content,
+		ifnull(tfa.fair_startdate, '-') AS startDate,
+		ifnull(tfa.fair_enddate,
+		'-') AS endDate,
+		ifnull(tfa.fair_address1, '-') AS address1,
+		ifnull(tfa.fair_address2, '-') AS address2,
+		ifnull(tfa.fair_zipcode,
+		'-') AS zipcode,
+		ifnull(tfa.fair_name, '-') AS name,
+		ifnull(tfa.fair_location, '-') AS location,
+		ifnull(ui.user_phone, '-')
+		AS phone,
+		ifnull(ui.user_email, '-') AS email,
+		ifnull(tfa.fair_companyNum, '-') AS companyNum,
+		ifnull(tfa.file_cd,
+		'0') AS fileCd,
+		tfi.file_name,
+		tfi.file_size,
+		tfi.file_nadd,
+		tfi.file_madd
+		FROM tb_fair tfa LEFT OUTER JOIN tb_userinfo ui ON tfa.loginID =
+		ui.loginID
+		LEFT OUTER JOIN tb_file tfi ON tfa.file_cd = tfi.file_cd
+		WHERE tfa.fair_no = #{id};
+	</select>
+
+	<!-- 박람회 참여하기 -->
+	<insert id="jobFairBoothApplicationSave">
+		<selectKey resultType="int" keyProperty="joinid" order="BEFORE">
+			select ifnull(max(join_id), 0) + 1 from tb_fair_join
+		</selectKey>
+		insert into tb_fair_join
+		(
+		join_id
+		, join_boothnum
+		, reg_date
+		, is_delete
+		,
+		fair_no
+		, loginID
+		) values (
+		#{joinid}
+		,
+		#{boothNum}
+		, date_format(Now(),
+		'%Y-%m-%d')
+		, 1
+		, #{id}
+		, #{loginId}
+		)
+	</insert>
+
+	<!-- 이미 쓰고 있는 부스번호 is_delete 3은 승인상태 -->
+	<select id="jobFairBoothApplicationExistBooth" resultType="hashmap">
+		SELECT join_boothnum AS boothNum
+		FROM tb_fair_join
+		WHERE fair_no = #{id} AND join_boothnum IS NOT NULL AND is_delete IN (3);
+	</select>
+</mapper>

@@ -1,0 +1,110 @@
+package kr.happyjob.study.fair.service;
+
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.happyjob.study.community.dao.NoticeDao;
+import kr.happyjob.study.fair.dao.FairCreationDao;
+
+@Service
+public class FairCreationServiceImpl implements FairCreationService {
+
+	@Autowired
+	FairCreationDao fairCreationDao;
+
+	@Autowired
+	NoticeDao noticeDao;
+
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+
+	@Value("${fileUpload.fairPath}")
+	private String fairPath;
+
+	@Value("${fileUpload.rootPath}")
+	private String rootPath;
+
+	@Value("${fileUpload.logicalrootPath}")
+	private String logicalrootPath;
+
+	@Override
+	public int fairNewSaveFile(Map<String, Object> paramMap, HttpServletRequest request, List<MultipartFile> multiFile)
+			throws Exception {
+
+		// 파일저장
+		String itemFilePath = fairPath + File.separator; // 업로드 실제 경로 조립
+															// (무나열생성)
+		// 실제 업로드 처리
+
+		logger.info("   - multiFile.size() : " + multiFile.get(0).getOriginalFilename());
+		// 파일 유무에 따라 파일 저장 작업을 나눔
+		if (multiFile.get(0).getOriginalFilename() == null || multiFile.get(0).getOriginalFilename() == "") {
+			return fairCreationDao.fairSave(paramMap);
+		} else {
+			int filec = noticeDao.filecdcheck(paramMap);
+			paramMap.put("filec", filec);
+			paramMap.put("filecd", filec);
+
+			for (int i = 0; i < multiFile.size(); i++) {
+
+				String savefilename = this.uploadFile(rootPath + File.separator + itemFilePath,
+						multiFile.get(i).getOriginalFilename(), multiFile.get(i).getBytes());
+
+				paramMap.put("file_name", multiFile.get(i).getOriginalFilename());
+				paramMap.put("file_size", multiFile.get(i).getSize());
+				paramMap.put("file_madd", rootPath + File.separator + itemFilePath + savefilename);
+				paramMap.put("file_type", multiFile.get(i).getOriginalFilename()
+						.substring(multiFile.get(i).getOriginalFilename().lastIndexOf(".") + 1));
+
+				if (multiFile.get(i).getOriginalFilename() != null
+						|| !multiFile.get(i).getOriginalFilename().equals("")) {
+					paramMap.put("file_nadd", logicalrootPath + File.separator + itemFilePath + savefilename);
+				} else {
+					paramMap.put("file_nadd", null);
+				}
+
+				logger.info("   - paramMapImpl : " + paramMap);
+
+				File finalsave = new File((String) paramMap.get("file_madd"));
+				multiFile.get(i).transferTo(finalsave);
+
+				fairCreationDao.fileNewSave(paramMap);
+
+			}
+
+			logger.info("   - Dao paramMap : " + paramMap);
+
+			return fairCreationDao.fairSave(paramMap);
+		}
+	}
+
+	/** 파일 중복명 제거 */
+	private String uploadFile(String fullpath, String originalName, byte[] fileData) throws Exception {
+		UUID uuid = UUID.randomUUID();
+		String savedName = uuid.toString() + "_" + originalName;
+
+		File target = new File(fullpath, savedName);
+
+		FileCopyUtils.copy(fileData, target);
+
+		return savedName;
+	}
+
+	@Override
+	public int fairSave(Map<String, Object> paramMap) throws Exception {
+		
+		return fairCreationDao.fairSave(paramMap);
+	}
+}

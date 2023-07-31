@@ -1,0 +1,124 @@
+package kr.happyjob.study.ad.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.happyjob.study.ad.model.AdModel;
+import kr.happyjob.study.ad.service.AdService;
+
+@Controller
+@RequestMapping("/ad/")
+public class AdController {	
+	
+	@Autowired
+	AdService adService;
+	
+	private final Logger logger = LogManager.getLogger(this.getClass());
+	
+	@RequestMapping("adStatus.do")
+	public String adMgt(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+
+		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+
+		return "ad/adMgt";
+	}
+	
+	// 채용공고 인서트, 업데이트, 딜리트
+	@RequestMapping("adSaveFile.do")
+	@ResponseBody
+	public Map<String, Object> adSaveFile(Model model, @RequestParam Map<String, Object> paramMap,
+			@RequestParam("addfile") List<MultipartFile> multiFile, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+
+		paramMap.put("loginID", session.getAttribute("loginId"));
+		String action = (String) paramMap.get("action");
+
+		if ("I".equals(action)) {
+			adService.adNewSaveFile(paramMap, request, multiFile);
+		}
+		else if ("U".equals(action)) {
+			adService.adUpdateFile(paramMap, request, multiFile);
+		}
+		else if ("D".equals(action)) {
+			adService.adDelete(paramMap);
+		}
+		else if ("R".equals(action)) {
+			adService.adRestart(paramMap);
+		}
+		else if ("C".equals(action)) {
+			adService.adCancel(paramMap);
+		}
+		else if ("P".equals(action)) {
+			adService.adComplete(paramMap);
+		}
+		
+		
+		Map<String, Object> returnMap = new HashMap<String, Object>();
+		returnMap.put("result", "SUCCESS");
+		return returnMap;
+		
+	}
+	
+	
+	// 채용공고 리스트 불러오기
+	@RequestMapping("adList.do")
+	public String adList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+
+		int countAdList = adService.countAdList(paramMap);
+		List<AdModel> adList = adService.adList(paramMap);
+		
+		model.addAttribute("countAdList", countAdList);  
+		model.addAttribute("adList", adList);
+		
+		return "ad/adList";
+	}
+	
+	
+	// 채용공고 상세보기 초기화
+	@RequestMapping("adDetail.do")
+	@ResponseBody
+	public Map<String, Object> adDetail(Model model, @RequestParam Map<String, Object> paramMap,
+			HttpServletRequest request, HttpServletResponse response, HttpSession session) throws Exception {
+		Map<String, Object> adDetailMap = adService.adDetail(paramMap);
+		return adDetailMap;
+	}
+	
+	
+	// 채용공고 인적사항 초기화
+	@RequestMapping("userDetail.do")
+	@ResponseBody
+	public Map<String, Object> userDetail(Model model, @RequestParam Map<String, Object> paramMap,
+			HttpServletRequest request, HttpServletResponse response, HttpSession session) throws Exception {
+		
+		Map<String, Object> userDetailMap = adService.userDetail(paramMap);
+		
+		return userDetailMap;
+	}
+	
+
+}

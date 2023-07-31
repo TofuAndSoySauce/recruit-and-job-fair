@@ -1,0 +1,98 @@
+package kr.happyjob.study.fair.model;
+
+public class FairMgtModel {
+	private int join_id;
+	private String join_memo;
+	private int join_boothnum;
+	private String join_denialdate;
+	private String reg_date;
+	private String update_date;
+	private int is_delete;
+	private int fair_no;
+	private String loginID;
+	private String fair_title;
+	private String name;
+	private String user_email;
+	private String detail_name;
+	
+	public String getDetail_name() {
+		return detail_name;
+	}
+	public void setDetail_name(String detail_name) {
+		this.detail_name = detail_name;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getFair_title() {
+		return fair_title;
+	}
+	public void setFair_title(String fair_title) {
+		this.fair_title = fair_title;
+	}
+	public int getJoin_id() {
+		return join_id;
+	}
+	public void setJoin_id(int join_id) {
+		this.join_id = join_id;
+	}
+	public String getJoin_memo() {
+		return join_memo;
+	}
+	public void setJoin_memo(String join_memo) {
+		this.join_memo = join_memo;
+	}
+	public int getJoin_boothnum() {
+		return join_boothnum;
+	}
+	public void setJoin_boothnum(int join_boothnum) {
+		this.join_boothnum = join_boothnum;
+	}
+	public String getJoin_denialdate() {
+		return join_denialdate;
+	}
+	public void setJoin_denialdate(String join_denialdate) {
+		this.join_denialdate = join_denialdate;
+	}
+	public String getReg_date() {
+		return reg_date;
+	}
+	public void setReg_date(String reg_date) {
+		this.reg_date = reg_date;
+	}
+	public String getUpdate_date() {
+		return update_date;
+	}
+	public void setUpdate_date(String update_date) {
+		this.update_date = update_date;
+	}
+	public int getIs_delete() {
+		return is_delete;
+	}
+	public void setIs_delete(int is_delete) {
+		this.is_delete = is_delete;
+	}
+
+	public int getFair_no() {
+		return fair_no;
+	}
+	public void setFair_no(int fair_no) {
+		this.fair_no = fair_no;
+	}
+	public String getLoginID() {
+		return loginID;
+	}
+	public void setLoginID(String loginID) {
+		this.loginID = loginID;
+	}
+	public String getUser_email() {
+		return user_email;
+	}
+	public void setUser_email(String user_email) {
+		this.user_email = user_email;
+	}
+}

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.fair.dao.JobFairBoothMgtDao">
+<!-- 부스관리 리스트 -->
+	<select id="jobFairBoothMgtList"
+		resultType="kr.happyjob.study.fair.model.JobFairBoothMgtModel">
+		SELECT tfa.loginID,
+			tfj.join_id AS jid,
+			tfa.fair_no AS id,  
+			tfa.fair_title AS title,
+			ifnull(tfa.fair_startdate, '-') AS startDate,
+			ifnull(tfa.fair_enddate, '-') AS endDate,
+			ifnull(tdcLocation.detail_name, '-') AS location,
+			ifnull(tdcLocation.detail_code, '0') AS locationCd,
+			ifnull(tfa.fair_name, '-') AS name,
+			ifnull(tfj.is_delete, '-') AS isDelete,
+			ifnull(tdcReject.detail_name, '-') AS isDeleteName,
+			ifnull(ui.user_phone, '-') AS phone
+		FROM tb_fair tfa
+		LEFT OUTER JOIN tb_userinfo ui ON tfa.loginID = ui.loginID
+		 LEFT OUTER JOIN tb_fair_join tfj ON tfa.fair_no = tfj.fair_no
+		 LEFT OUTER JOIN tb_detail_code tdcReject ON tdcReject.group_code='ad_yn' AND tfj.is_delete = tdcReject.detail_code
+		 LEFT OUTER JOIN tb_detail_code tdcLocation ON tdcLocation.group_code='location' AND tfa.fair_location = tdcLocation.detail_code
+		 
+		WHERE tfa.is_delete = 2 AND tfj.loginID = #{loginId}
+		<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+		and tfa.fair_title Like CONCAT('%', #{srctitle}, '%')
+		</if>
+		<if test="(region != null) and ( !''.equals(region) )">
+			and tfa.fair_location Like CONCAT('%', #{region}, '%')
+		</if>
+		order by
+		tfa.fair_no desc
+		limit
+		#{pageindex}, #{pageSize}
+	</select>
+	<select id="countJobFairBoothMgtList" resultType="int">
+		SELECT count(1) AS tot_cnt
+		FROM tb_fair_join tfj
+		LEFT OUTER JOIN tb_fair tfa ON tfa.fair_no = tfj.fair_no
+		WHERE tfj.loginID = #{loginId}
+		<if test="(srctitle != null) and ( !''.equals(srctitle) )"> 
+		and tfa.fair_title 
+		Like CONCAT('%', #{srctitle}, '%') 
+		</if> 
+		<if test="(region != null) and ( !''.equals(region) )">
+		and tfa.fair_location Like CONCAT('%', #{region}, '%')
+		</if> 
+	</select>
+	<!-- 부스관리 상세페이지 -->
+	<select id="jobFairBoothMgtDetail"
+		resultType="kr.happyjob.study.fair.model.JobFairBoothMgtModel">
+		SELECT tfa.loginID,
+		tfa.fair_no AS id,
+		tfa.fair_title AS title,
+		ifnull(tfa.fair_content, '-') AS content,
+		ifnull(tfa.fair_startdate, '-') AS startDate,
+		ifnull(tfa.fair_enddate, '-') AS endDate,
+		ifnull(tfa.fair_address1, '-') AS address1,
+		ifnull(tfa.fair_address2, '-') AS address2,
+		ifnull(tfa.fair_zipcode, '-') AS zipcode,
+		ifnull(tfa.fair_name, '-') AS name,
+		ifnull(tfa.fair_location, '-') AS location,
+		ifnull(tfa.fair_companyNum, '-') AS companyNum,
+		ifnull(ui.user_phone, '-') AS phone,
+		ifnull(ui.user_email, '-') AS email,
+		ifnull(tfj.join_boothnum, '0') AS boothNum,
+		tfj.is_delete AS isDelete,
+		ifnull(tfj.join_memo, '-') AS memo,
+		tfa.file_cd AS fileCd,
+			tfi.file_name,
+			tfi.file_size,
+			tfi.file_nadd,
+			tfi.file_madd
+		FROM tb_fair tfa LEFT OUTER JOIN tb_userinfo ui ON tfa.loginID = ui.loginID
+		LEFT OUTER JOIN tb_file tfi ON tfa.file_cd = tfi.file_cd
+		LEFT OUTER JOIN tb_fair_join tfj ON tfa.fair_no = tfj.fair_no
+		WHERE tfa.fair_no = #{id} AND tfj.loginID = #{loginId};
+	</select>
+	<!--대기상태 부스신청 취소(db에서는 삭제) -->
+	<delete id="jobFairBoothMgtCancel">
+		DELETE FROM tb_fair_join WHERE join_id = #{jid}
+	</delete>
+	<!--regionSelect 지역 셀렉트 박스 -->
+	<select id="regionSelect" resultType="hashmap">
+		SELECT
+		detail_code AS locationCd,
+		detail_name AS location
+
+		FROM tb_detail_code
+		WHERE group_code = "location";
+	</select>
+</mapper>

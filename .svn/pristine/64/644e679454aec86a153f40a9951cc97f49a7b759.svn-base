@@ -1,0 +1,182 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.happyjob.study.like.dao.LikeDao">
+
+<select 
+	id="list" 
+	parameterType="kr.happyjob.study.like.model.LikeQueryParam" 
+	resultType="kr.happyjob.study.like.model.LikeResponseDto$LikeList">
+	
+	SELECT
+	      a.ad_no adNo,
+	      a.ad_title title,
+	      company.loginID companyName,
+	    	CASE
+				WHEN a.ad_experience = '0' THEN '신입'
+	        ELSE concat(a.ad_experience, ' 년차')
+		  		END experience,
+	      c3.detail_name position,
+	      c5.detail_name salary,
+	      a.ad_date duedate,
+	      DATEDIFF(STR_TO_DATE(a.ad_date, '%Y-%m-%d'), CURDATE()) daysLeft,
+	      COALESCE (s.ad_no, false) applied,
+	      (SELECT count(*) FROM
+				tb_ad_like l
+			JOIN
+			  tb_ad a
+			USING
+			  (ad_no)
+			LEFT JOIN 
+			  (SELECT
+			      s.ad_no,
+			      s.resume_no,
+			      s.reg_date
+			    FROM 
+			      tb_resume r
+			    JOIN 
+			      tb_resume_submit s
+			    USING 
+			      (resume_no)
+			    WHERE 
+			      r.loginID = #{param.loginId}
+			  ) s
+			ON 
+			  l.ad_no = s.ad_no
+		
+			<where>
+				l.loginID = #{param.loginId}
+			AND 
+				l.is_delete = 2
+				<if test="param.excludesApplied">
+					AND s.ad_no IS NULL
+				</if>
+				<if test="param.excludesExpired">
+					AND DATEDIFF(STR_TO_DATE(a.ad_date, '%Y-%m-%d'), CURDATE()) >= 0
+				</if>
+				<if test="param.keyword">
+					AND a.ad_title LIKE CONCAT('%', #{param.keyword}, '%')
+				
+				</if>
+			</where> ) totalCount
+	FROM
+		tb_ad_like l
+	JOIN
+	  tb_ad a
+	USING
+	  (ad_no)
+	JOIN 
+		tb_userinfo company
+	ON
+	  a.loginID = company.loginID
+	JOIN 
+		tb_detail_code c3
+	ON 
+		c3.group_code = 'position'
+	AND
+		c3.detail_code = a.ad_position   
+	JOIN
+	  tb_detail_code c5
+	ON 
+	  c5.group_code = 'resume_salary'
+	AND
+	  c5.detail_code = a.ad_salary
+	JOIN
+	  tb_detail_code c1
+	ON
+	  c1.group_code = 'education'
+	AND
+	  c1.detail_code = a.ad_education
+	LEFT JOIN 
+	  (SELECT
+	      s.ad_no,
+	      s.resume_no,
+	      s.reg_date
+	    FROM 
+	      tb_resume r
+	    JOIN 
+	      tb_resume_submit s
+	    USING 
+	      (resume_no)
+	    WHERE 
+	      r.loginID = #{param.loginId}
+	  ) s
+	ON 
+	  l.ad_no = s.ad_no
+
+	<where>
+		l.loginID = #{param.loginId}
+	AND 
+		l.is_delete = 2
+		<if test="param.excludesApplied">
+			AND s.ad_no IS NULL
+		</if>
+		<if test="param.excludesExpired">
+			AND DATEDIFF(STR_TO_DATE(a.ad_date, '%Y-%m-%d'), CURDATE()) >= 0
+		</if>
+		<if test="param.keyword">
+			AND a.ad_title LIKE CONCAT('%', #{param.keyword}, '%')
+		
+		</if>
+	</where>
+	  
+	ORDER BY 
+		daysLeft DESC
+	LIMIT
+		#{param.pageIndex}, #{param.pageSize};
+		
+</select>
+
+<insert id="save" parameterType="kr.happyjob.study.like.model.LikeRequestDto$Post" >
+	<selectKey resultType="int" keyProperty="likeNo" order="BEFORE">
+		SELECT 
+			IFNULL(MAX(like_no), 0) + 1 
+		FROM 
+			tb_ad_like
+	</selectKey>
+		INSERT INTO 
+			tb_ad_like
+			(
+		   	like_no
+			, reg_date
+			, update_date
+			, is_delete
+			, ad_no
+			, loginID
+			) 
+		VALUES (
+		   #{likeNo} 
+		  , CURDATE() 
+		  , null 
+		  , '2' 
+		  , #{adNo} 
+		  , #{loginId}
+		)
+
+</insert>
+
+<select 
+	id="getOneByAdNoAndLoginId" 
+	resultType="kr.happyjob.study.like.model.LikeResponseDto$LikeList" >
+	SELECT 
+		ad_no adNo,
+		like_no
+	FROM 
+		tb_ad_like
+	WHERE
+		loginID = #{loginId}
+	AND
+		ad_no = #{adNo}
+</select>
+
+<update id="updateAsDeleted" parameterType="kr.happyjob.study.like.model.LikeRequestDto$Patch">
+
+	UPDATE 
+		tb_ad_like
+	SET 
+		is_delete = 1
+	WHERE 
+		loginID = #{loginId}
+	AND
+		ad_no IN #{adNo}
+
+</update>
+</mapper>

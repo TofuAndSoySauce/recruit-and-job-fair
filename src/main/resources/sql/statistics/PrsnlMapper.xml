@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.statistics.dao.PrsnlDao">
+<!-- 개인회원 목록조회 -->
+<!-- (개인회원) 만 나이 계산, 서버 시간 기준 -->
+<select id = "prsnllist" resultType="kr.happyjob.study.statistics.model.PrsnlModel">
+select 
+	tu.loginID, 
+	tu.name, 
+	ROUND((TO_DAYS(NOW()) - (TO_DAYS(tu.user_birthday))) / 365) AS age, 
+	tdcs.detail_name as sex,
+	tdcp.detail_name as position,
+	tdcl.detail_name as location,
+	tu.is_delete
+from tb_userinfo tu
+	left join tb_detail_code tdcp
+	on tu.user_preferposition = tdcp.detail_code and tdcp.group_code= 'position' 
+	left join tb_detail_code tdcl 
+	on tu.user_preferarea = tdcl.detail_code and tdcl.group_code= 'location'
+	left join tb_detail_code tdcs
+	on tu.user_sexuality = tdcs.detail_code and tdcs.group_code= 'user_sexuality'
+where tu.user_type = 'C' 
+	<!-- and tu.user_birthday is not null -->
+	<if test="(nm_search != null) and ( !''.equals(nm_search) )">
+	and tu.name Like CONCAT('%', #{nm_search}, '%')
+	</if>
+	limit #{pageindex}, #{pageSize}
+</select>
+<!-- 개인회원 카운트리스트 -->
+<select id="countmemberlist" resultType="int">
+select 
+	count(1) as tot_cnt
+from tb_userinfo tu
+	left join tb_detail_code tdcp
+	on tu.user_preferposition = tdcp.detail_code and tdcp.group_code= 'position' 
+	left join tb_detail_code tdcl 
+	on tu.user_preferarea = tdcl.detail_code and tdcl.group_code= 'location'
+	left join tb_detail_code tdcs
+	on tu.user_sexuality = tdcs.detail_code and tdcs.group_code= 'user_sexuality'
+where tu.user_type = 'C' 
+	<!-- and tu.user_birthday is not null -->
+	<if test="(nm_search != null) and ( !''.equals(nm_search) )">
+	and tu.name Like CONCAT('%', #{nm_search}, '%')
+	</if>
+</select>
+
+<!-- ================================================================= -->
+<!-- 기업회원 목록조회 -->
+<!-- (기업회원)  -->
+<!--  ex) 아이디, 기업이름, 고용형태, 경력, 학력, 급여, 채용공고 기간(작성일자, 마감일자), 채용공고 진행여부, 탈퇴여부-->
+<select id = "prsnllist2" resultType="kr.happyjob.study.statistics.model.PrsnlModel">
+select 
+	tu.loginID loginID2, 
+	tu.name name2, 
+	tdct.detail_name adtype, 
+	tdcex.detail_name adexp, 
+	tdced.detail_name adedu, 
+	tdcsa.detail_name adsal, 
+	ta.reg_date regdat,
+	ta.ad_date addat, 
+	tdcst.detail_name adstat,
+	tu.is_delete
+from tb_userinfo tu 
+	left join tb_ad ta
+	on tu.loginID = ta.loginID
+	left join tb_detail_code tdct
+	on ta.ad_type = tdct.detail_code and tdct.group_code= 'ad_type' 
+	left join tb_detail_code tdcex
+	on ta.ad_type = tdcex.detail_code and tdcex.group_code= 'resume_experience' 
+	left join tb_detail_code tdcsa
+	on ta.ad_type = tdcsa.detail_code and tdcsa.group_code= 'resume_salary' 
+	left join tb_detail_code tdced
+	on ta.ad_type = tdced.detail_code and tdced.group_code= 'education' 
+	left join tb_detail_code tdcst
+	on ta.ad_type = tdcst.detail_code and tdcst.group_code= 'ad_status' 
+where user_type = 'B'
+	<if test="(nm_search2 != null) and ( !''.equals(nm_search2) )">
+		and tu.name Like CONCAT('%', #{nm_search2}, '%')
+	</if>
+	limit #{pageindex}, #{pageSize}
+</select>
+<!-- 기업회원 카운트리스트 -->
+<select id="countmemberlist2" resultType="int">
+select
+	count(1) as tot_cnt2  
+from tb_userinfo tu 
+	left join tb_ad ta
+	on tu.loginID = ta.loginID
+	left join tb_detail_code tdct
+	on ta.ad_type = tdct.detail_code and tdct.group_code= 'ad_type' 
+	left join tb_detail_code tdcex
+	on ta.ad_type = tdcex.detail_code and tdcex.group_code= 'resume_experience' 
+	left join tb_detail_code tdcsa
+	on ta.ad_type = tdcsa.detail_code and tdcsa.group_code= 'resume_salary' 
+	left join tb_detail_code tdced
+	on ta.ad_type = tdced.detail_code and tdced.group_code= 'education' 
+	left join tb_detail_code tdcst
+	on ta.ad_type = tdcst.detail_code and tdcst.group_code= 'ad_status' 
+where user_type = 'B'
+	<if test="(nm_search2 != null) and ( !''.equals(nm_search2) )">
+		and tu.name Like CONCAT('%', #{nm_search2}, '%')
+	</if>
+</select>
+<!-- ================================================================= -->
+<!-- 개인회원 상세조회 -->
+<!-- <select id="prsnldetail" resultType="kr.happyjob.study.statistics.model.PrsnlModel">
+select 
+	loginID loginID3, 
+	password, 
+	name name3, 
+	user_phone phone, 
+	user_zipcode zipcode, 
+	user_birthday birthday, 
+	user_address1 address1,
+	user_preferarea preferArea,
+	user_address2 address2,
+	user_preferposition preferPosition,
+	user_email email,
+	user_sexuality sex2
+from tb_userinfo
+where user_type = 'C' 
+</select> -->
+
+	
+</mapper>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.fair.dao.FairMgtDao">
+
+	<!-- 목록조회 -->
+	<select id="fairlist" resultType="kr.happyjob.study.fair.model.FairMgtModel">
+		select 
+		tfj.fair_no
+		,tf.fair_title 
+		,ui.name as name
+		,ui.user_email
+		,tfj.reg_date
+		,tfj.is_delete
+		,tfj.join_denialdate
+		,tfj.join_memo
+		,dc.detail_name
+		,tfj.loginID as loginID
+		from 
+		tb_fair_join tfj
+		inner join tb_fair tf on tf.fair_no = tfj.fair_no
+		inner join tb_userinfo ui on ui.loginID = tfj.loginID
+		inner join tb_detail_code dc on dc.group_code = 'ad_yn' and dc.detail_code = tfj.is_delete
+			<where>	
+			<if test="(companysearch != null) and ( !''.equals(companysearch) )">
+				and ui.name Like CONCAT('%', #{companysearch}, '%')
+			</if> 
+			 and ui.user_type = "B" 
+			</where>
+			<if test= 'option == "1"'>
+				order by tfj.reg_date desc			
+			</if>
+			<if test='option == "2"'>
+				order by ui.name		
+			</if>
+			<if test='option == "3"'>
+				order by tf.fair_title	
+			</if>
+			<if test='option == "0"'>
+				order by tfj.reg_date desc		
+			</if>	 
+		limit #{pageindex}, #{pageSize}
+	</select>
+	
+	<select id="countfairlist" resultType="int">
+		select count(*)
+		from 
+		tb_fair_join tfj
+		inner join tb_fair tf on tf.fair_no = tfj.fair_no
+		inner join tb_userinfo ui on ui.loginID = tfj.loginID
+		inner join tb_detail_code dc on dc.group_code = 'ad_yn' and dc.detail_code = tfj.is_delete
+			<where>	
+			<if test="(companysearch != null) and ( !''.equals(companysearch) )">
+				and ui.name Like CONCAT('%', #{companysearch}, '%')
+			</if> 
+			 and ui.user_type = "B" 
+			</where>
+	</select>
+	
+	<!-- 반려 -->
+	<update id="rejectRequest">
+		update tb_fair_join tfj
+		inner join tb_userinfo ui on ui.loginID = tfj.loginID
+			set 
+				tfj.is_delete = 2
+				,tfj.join_denialdate = date_format(Now(), '%Y-%m-%d')
+				,tfj.join_memo = #{reason}
+		where fair_no = #{fair_no} and tfj.loginID = #{loginID1}
+	</update>
+	
+	<!-- 승인 -->
+	<update id="acceptRequest">
+		update tb_fair_join tfj
+		inner join tb_userinfo ui on ui.loginID = tfj.loginID
+			set 
+				tfj.is_delete = 3
+				,join_denialdate = date_format(Now(), '%Y-%m-%d')
+		where fair_no = #{fair_no} and tfj.loginID = #{loginID1}
+	</update>
+	
+</mapper>

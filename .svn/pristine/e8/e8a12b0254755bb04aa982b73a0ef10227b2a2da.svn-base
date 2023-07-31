@@ -1,0 +1,50 @@
+package kr.happyjob.study.community.service;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.happyjob.study.community.model.CommunityCommentModel;
+import kr.happyjob.study.community.model.CommunityModel;
+
+public interface CommunityService {
+	
+	// 커뮤니티 리스트
+	List<CommunityModel> communitylist(Map<String, Object> paramMap)throws Exception;
+	// 페이징
+	int countcommunitylist(Map<String, Object> paramMap)throws Exception;
+	// 등록
+	int communitynewsave(Map<String, Object> paramMap)throws Exception;
+	// 수정
+	int communityupdate(Map<String, Object> paramMap)throws Exception;
+	// 삭제
+	int communitydelete(Map<String, Object> paramMap)throws Exception;
+	// 글 상세보기
+	CommunityModel communitydetail(Map<String, Object> paramMap) throws Exception;
+	// 조회수
+	int hit(Map<String, Object> paramMap)throws Exception;
+	// 등록+파일
+	int communitynewsavefile(Map<String, Object> paramMap, HttpServletRequest request, List<MultipartFile> multiFile) throws Exception;
+	// 수정+파일
+	int communitynewupdatefile(Map<String, Object> paramMap, HttpServletRequest request,
+			List<MultipartFile> multiFile) throws Exception;
+	
+	// 커뮤니티 답글 리스트
+	List<CommunityCommentModel> communitycommentlist(Map<String, Object> paramMap);
+	// 답글 페이징
+	int countcommentlist(Map<String, Object> paramMap);
+	// 답글 등록
+	int commetnnewsave(Map<String, Object> paramMap);
+	// 답글 수정
+	int commentupdate(Map<String, Object> paramMap);
+	// 답글 삭제
+	int commentdelete(Map<String, Object> paramMap);
+	
+	
+	
+	
+
+}

@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.resume.dao.ResumeDao">
+
+	<!-- 이력서 리스트 불러오기 -->
+	<select id="resumeList" resultType="kr.happyjob.study.resume.model.ResumeModel">
+		select
+		 	  resume_no
+			, resume_title
+			, resume_hireType
+			, resume_salary
+			, resume_postion
+			, reg_date
+			, is_delete
+		from
+				 tb_resume 
+		<where>
+				is_delete = 2
+			and loginId = #{loginId}
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and resume_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and reg_date <![CDATA[>=]]>	#{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and reg_date <![CDATA[<=]]> #{srcedate}
+			</if>
+		</where>
+		order by
+			resume_no desc
+		limit 
+			#{pageindex}, #{pageSize}
+	</select>
+	
+	
+	<!-- 이력서 리스트 카운트 -->
+	<select id="countResumeList" resultType="int">
+		select
+			count(1) as tot_cnt
+		from
+			tb_resume
+		<where>
+				is_delete = 2
+			and loginID = #{loginId}
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and resume_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and reg_date <![CDATA[>=]]> #{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and reg_date <![CDATA[<=]]> #{srcedate}
+			</if>
+		</where>
+	</select>
+	
+	
+	<!-- 상세보기 초기화 (인적사항 + 이력서) -->
+	<select id="resumeDetail" resultType="hashmap">
+		select
+			  re.resume_no
+			, re.resume_title
+			, re.resume_education
+			, re.resume_school
+			, re.resume_major
+			, re.resume_postion
+			, re.resume_experience
+			, re.resume_hireType
+			, re.resume_location
+			, re.resume_salary
+			, re.resume_letterTitle
+			, CONVERT(resume_letterContent using utf8) resume_letterContent
+			, re.reg_date
+			, re.update_date
+			, re.resume_yn
+			, re.is_delete
+			, re.resume_count
+			, re.loginID
+			, re.file_cd
+			, ui.name
+			, ui.user_birthday
+			, ui.user_sexuality
+			, ui.user_phone
+			, ui.user_email
+			, ui.user_zipcode
+			, ui.user_address1
+			, ui.user_address2
+			, fe.file_name
+			, fe.file_size
+			, fe.file_nadd
+			, fe.file_madd
+		from
+				 tb_resume re
+	   		join tb_userinfo ui
+	   		on   re.loginID = ui.loginID
+	   		left join tb_file fe
+	   		on   re.file_cd = fe.file_cd
+		where
+			resume_no = #{resume_no}
+	</select>
+	
+	<!-- 상세보기 초기화 (인적사항) -->
+	<select id="userDetail" resultType="hashmap">
+		select
+			  name
+			, user_birthday
+			, user_sexuality
+			, user_phone
+			, user_email
+			, user_zipcode
+			, user_address1
+			, user_address2
+		from
+			tb_userinfo
+		where
+			loginID = #{loginID}
+	
+	</select>
+
+
+	<!-- 이력서 등록 (파일 없음) -->
+	<insert id="resumeNewSave">
+		<selectKey resultType="int" keyProperty="resumeNo" order="BEFORE">
+			select ifnull(max(resume_no), 0) + 1 from tb_resume
+		</selectKey>
+		insert into tb_resume (
+			  resume_no
+			, resume_title
+			, resume_education
+			, resume_school
+			, resume_major
+			, resume_postion
+			, resume_experience
+			, resume_hireType
+			, resume_location
+			, resume_salary
+			, resume_letterTitle
+			, resume_letterContent
+			, reg_date
+			, resume_yn
+			, is_delete
+			, resume_count
+			, loginID
+		)
+		values (
+			  #{resumeNo}
+			, #{resume_title}
+			, #{resume_education}
+			, #{resume_school}
+			, #{resume_major}
+			, #{resume_postion}
+			, #{resume_experience}
+			, #{resume_hireType}
+			, #{resume_location}
+			, #{resume_salary}
+			, #{resume_letterTitle}
+			, #{resume_letterContent}
+			, #{reg_date}
+			, #{resume_yn}
+			, 2
+			, 0
+			, #{loginID}
+		)
+		
+	</insert>
+	
+	
+	<!-- 이력서 등록 (파일 있음) -->
+	<insert id="resumeNewSaveFile">
+		<selectKey resultType="int" keyProperty="resumeNo" order="BEFORE">
+			select ifnull(max(resume_no), 0) + 1 from tb_resume
+		</selectKey>
+		insert into tb_resume (
+			  resume_no
+			, resume_title
+			, resume_education
+			, resume_school
+			, resume_major
+			, resume_postion
+			, resume_experience
+			, resume_hireType
+			, resume_location
+			, resume_salary
+			, resume_letterTitle
+			, resume_letterContent
+			, reg_date
+			, resume_yn
+			, is_delete
+			, resume_count
+			, loginID
+			, file_cd
+		)
+		values (
+			  #{resumeNo}
+			, #{resume_title}
+			, #{resume_education}
+			, #{resume_school}
+			, #{resume_major}
+			, #{resume_postion}
+			, #{resume_experience}
+			, #{resume_hireType}
+			, #{resume_location}
+			, #{resume_salary}
+			, #{resume_letterTitle}
+			, #{resume_letterContent}
+			, #{reg_date}
+			, #{resume_yn}
+			, 2
+			, 0
+			, #{loginID}
+			, #{filecd}
+		)
+	</insert>
+	
+	
+	
+	<!-- 이력서 업데이트 (파일 없음) -->
+	<update id="resumeUpdate">
+		update 
+			tb_resume
+		set
+			  resume_title = #{resume_title}
+			, resume_education = #{resume_education}
+			, resume_school = #{resume_school}
+			, resume_major = #{resume_major}
+			, resume_postion = #{resume_postion}
+			, resume_experience = #{resume_experience}
+			, resume_hireType = #{resume_hireType}
+			, resume_location = #{resume_location}
+			, resume_salary = #{resume_salary}
+			, resume_letterTitle = #{resume_letterTitle}
+			, resume_letterContent = #{resume_letterContent}
+			, update_date = #{update_date}
+			, resume_yn = #{resume_yn}
+		where
+			resume_no = #{resume_no}
+	</update>
+	
+	
+	<!-- 이력서 업데이트 (파일 있음) -->
+	<update id="resumeUpdateFile">
+		update 
+			tb_resume
+		set
+			  resume_title = #{resume_title}
+			, resume_education = #{resume_education}
+			, resume_school = #{resume_school}
+			, resume_major = #{resume_major}
+			, resume_postion = #{resume_postion}
+			, resume_experience = #{resume_experience}
+			, resume_hireType = #{resume_hireType}
+			, resume_location = #{resume_location}
+			, resume_salary = #{resume_salary}
+			, resume_letterTitle = #{resume_letterTitle}
+			, resume_letterContent = #{resume_letterContent}
+			, update_date = #{update_date}
+			, resume_yn = #{resume_yn}
+			, file_cd = #{filecd}
+		where
+			resume_no = #{resume_no}
+	</update>
+	
+	
+	
+	<!-- 이력서 딜리트 -->
+	<update id="resumeDelete">
+		update
+			tb_resume
+		set
+			is_delete = 1
+		where
+			resume_no = #{resume_no}
+	</update>
+	
+	
+
+	
+	<!-- 파일 코드 생성 -->
+	<select id="fileCdCheck" resultType="int">
+		select
+			ifnull(max(file_cd),0) + 1
+		FROM tb_file
+	</select>
+	
+
+	<!-- 파일 저장 -->
+	<insert id="fileNewSave">
+		insert into tb_file (
+		 	 file_cd
+			,file_type
+			,file_size
+			,file_name
+			,file_nadd
+			,file_madd
+		) 
+		values (
+		 	 #{filecd}
+			,#{file_type}
+			,#{file_size}
+			,#{file_name}
+			,#{file_nadd}
+			,#{file_madd}
+		)
+	</insert>
+	
+	<!-- 이력서 업데이트시 기존의 파일이 존재하는 경우 -->
+	<update id="fileUpdate">
+		update tb_file
+			set
+		 		file_type = #{file_type}
+		,		file_size = #{file_size}
+		,		file_name = #{file_name}
+		,		file_nadd = #{file_nadd}
+		,		file_madd = #{file_madd}
+		where	file_cd = #{filecd}
+	</update>
+	
+	<!-- 이력서 업데이트시 기존의 파일이 없는 경우 -->
+	<insert id="fileUpdateNewSave">
+		insert into tb_file
+		(
+		file_cd
+		,file_type
+		,file_size
+		,file_name
+		,file_nadd
+		,file_madd
+		) values (
+		#{filecd}
+		,#{file_type}
+		,#{file_size}
+		,#{file_name}
+		,#{file_nadd}
+		,#{file_madd}
+		)
+	</insert>
+	
+
+</mapper>

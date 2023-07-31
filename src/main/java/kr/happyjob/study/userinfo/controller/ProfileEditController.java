@@ -1,0 +1,86 @@
+package kr.happyjob.study.userinfo.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.happyjob.study.userinfo.model.ProfileEditModel;
+import kr.happyjob.study.userinfo.service.ProfileEditService;
+
+@Controller
+@RequestMapping("/userInfo/")
+public class ProfileEditController {
+	@Autowired
+	ProfileEditService profileEditService;
+
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+
+	// Get class name for logger
+	private final String className = this.getClass().toString();
+
+	@RequestMapping("profileEdit.do")
+	public String profileEdit(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".profileEdit");
+		logger.info("   - paramMap : " + paramMap);
+		
+		
+		// select박스가져오기(기업업종, 기업 규모)
+				List<ProfileEditModel> prefPos= profileEditService.preferPosition();
+				List<ProfileEditModel> prefArea= profileEditService.preferArea();		
+		
+				//동기, 고정된 값
+				model.addAttribute("prefPos", prefPos);
+				model.addAttribute("prefArea", prefArea);
+				
+		logger.info("   - model : " +model);
+		logger.info("+ End " + className + ".profileEdit");
+		
+		return "userinfo/profileEdit/profileEdit";
+	}
+	@RequestMapping("profileEditDetail.do")
+	@ResponseBody
+	public ProfileEditModel profileEditDetail(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		logger.info("   - paramMap : " + paramMap);
+		
+		// 개인정보 화면 출력
+				paramMap.put("loginId", (String) session.getAttribute("loginId"));
+				ProfileEditModel proEdInf= profileEditService.profileEditInfo(paramMap);
+				model.addAttribute("profileEditInfo", proEdInf);
+		
+		return proEdInf;
+	}
+	@RequestMapping("profileEditUpdateFile.do")
+	@ResponseBody
+	public Map<String, Object> profileEditUpdateFile(Model model, @RequestParam Map<String, Object> paramMap,
+			@RequestParam("profileUpload") List<MultipartFile> multiFile, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".profileEditUpdateFile");
+		logger.info("   - paramMap : " + paramMap);		
+		
+		
+		paramMap.put("loginId", session.getAttribute("loginId"));
+		profileEditService.profileEditNewUpdateFile(paramMap, request, multiFile);
+		
+		logger.info("+ End " + className + ".profileEditUpdateFile");
+		return paramMap;
+	}
+
+}

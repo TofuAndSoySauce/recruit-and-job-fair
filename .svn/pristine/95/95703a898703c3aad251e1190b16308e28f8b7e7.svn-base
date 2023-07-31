@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.community.dao.CommunityDao">
+
+<!-- 커뮤니티 목록 불러오기-->
+	<select id="communitylist" resultType="kr.happyjob.study.community.model.CommunityModel">
+		SELECT 
+			  tb.board_no
+			, tb.board_title
+			, ui.name as writer
+			, tb.reg_date
+			, tb.board_count
+			, tb.is_delete
+		FROM
+			tb_board tb
+		JOIN tb_userinfo ui
+		ON tb.loginID = ui.loginID
+
+		WHERE
+			tb.is_delete = 2
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tb.board_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and tb.reg_date <![CDATA[>=]]>
+				#{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and tb.reg_date <![CDATA[<=]]>
+				#{srcedate}
+			</if>
+		ORDER BY
+		tb.board_no desc
+		LIMIT #{pageindex}, #{pageSize}
+		
+	</select>
+	
+  <!-- 페이징 -->	
+	<select id="countcommunitylist" resultType="int">
+		SELECT
+			count(1) as tot_cnt
+		FROM
+		tb_board tb
+
+		WHERE
+			tb.is_delete = 2
+			<if test="(srctitle != null) and ( !''.equals(srctitle) )">
+				and tb.board_title Like CONCAT('%', #{srctitle}, '%')
+			</if>
+			<if test="(srcsdate != null) and ( !''.equals(srcsdate) )">
+				and tb.reg_date <![CDATA[>=]]>
+				#{srcsdate}
+			</if>
+			<if test="(srcedate != null) and ( !''.equals(srcedate) )">
+				and tb.reg_date <![CDATA[<=]]>
+				#{srcedate}
+			</if>
+	
+	</select>
+<!-- 조회수 -->
+	<update id="hit">
+		UPDATE tb_board
+		SET
+			board_count = board_count + 1
+		WHERE board_no = #{communityno}
+	</update>
+
+<!-- 상세조회 -->
+	<select id="communitydetail" resultType="kr.happyjob.study.community.model.CommunityModel">
+		SELECT 
+			  tb.board_title
+			, tb.reg_date
+			, ui.name as writer
+			, tb.board_content
+			, tb.board_no
+			, tb.file_cd
+			, tf.file_name
+			, tf.file_size
+			, tf.file_nadd
+			, tf.file_madd
+			, tb.loginID writer_id
+		FROM tb_board tb 
+		JOIN tb_userinfo ui 
+			ON tb.loginID = ui.loginID
+		LEFT JOIN tb_file tf
+			ON tb.file_cd = tf.file_cd
+		WHERE tb.board_no = #{communityno}
+	</select>
+<!-- 커뮤니티 등록  -->
+	<insert id="communitynewsave">
+	<selectKey resultType="int" keyProperty="communityno" order="BEFORE">
+			SELECT IFNULL(max(board_no), 0) + 1 
+			FROM tb_board
+		</selectKey>
+		INSERT INTO tb_board
+		(
+		  board_no
+		, loginID
+		, is_delete
+		, reg_date
+		, board_title
+		, board_content
+		, board_count
+		) 
+		Values (
+		  #{communityno}
+		, #{loginId}
+		, 2
+		, #{community_datefile}
+		, #{community_titlefile}
+		, #{community_detfile}
+		, 0
+		)
+	</insert>
+	
+<!-- 커뮤니티 수정 -->
+	<update id="communityupdate">
+	UPDATE tb_board
+	SET
+		  board_title = #{community_titlefile}
+		, board_content = #{community_detfile}
+		, update_date = date_format(Now(), '%Y-%m-%d')
+		, file_cd = #{filecd}
+		where board_no = #{communityno}
+	</update>
+	
+<!-- 커뮤니티 삭제 -->
+	<update id="communitydelete">
+	UPDATE tb_board
+	SET
+		is_delete = 1
+	WHERE board_no = #{communityno}
+	</update>
+	
+<!-- 파일 코드 생성 -->
+	<select id="filecdcheck" resultType="int">
+		SELECT
+			IFNULL(MAX(file_cd),0) + 1
+		FROM tb_file
+	</select>
+	
+<!-- 파일 저장 -->
+	<insert id="filenewsave">
+	INSERT INTO tb_file
+		(
+		  file_cd
+		, file_type
+		, file_size
+		, file_name
+		, file_nadd
+		, file_madd
+		) VALUES (
+		  #{filecd}
+		, #{file_type}
+		, #{file_size}
+		, #{file_name}
+		, #{file_nadd}
+		, #{file_madd}
+		)
+	</insert>
+<!-- 파일 수정 -->
+	<update id="fileupdate">
+	UPDATE tb_file
+		SET
+		   file_type = #{file_type}
+		 , file_size = #{file_size}
+		 , file_name = #{file_name}
+		 , file_nadd = #{file_nadd}
+		 , file_madd = #{file_madd}
+	WHERE  file_cd = #{filecd}
+	</update>
+
+<!-- 커뮤니티 등록+파일  -->
+	<insert id="communityfilenewsave">
+		<selectKey resultType="int" keyProperty="communityno" order="BEFORE">
+			SELECT IFNULL(MAX(board_no), 0) + 1 
+			FROM tb_board
+		</selectKey>
+		INSERT INTO tb_board
+		(
+		  board_no
+		, loginID
+		, is_delete
+		, reg_date
+		,
+		  board_content
+		, board_title
+		, board_count
+		, file_cd
+		) VALUES (
+		  #{communityno}
+		, #{loginId}
+		, 2
+		, #{community_datefile}
+		, #{community_detfile}
+		, #{community_titlefile}
+		, 0
+		, #{filecd}
+		)
+	</insert>	
+	
+<!-- 커뮤니티 답글 목록 불러오기-->
+	<select id="communitycommentlist" resultType="kr.happyjob.study.community.model.CommunityCommentModel">
+		SELECT 
+			  tbc.comment_no
+			, tbc.comment_content
+			, ui.loginID
+			, tbc.reg_date
+			, tbc.is_delete
+		FROM
+			tb_board_comment tbc
+		JOIN tb_userinfo ui
+		ON tb.loginID = ui.loginID
+
+		WHERE
+			tbc.is_delete = 2
+		ORDER BY
+		tbc.comment_no desc
+	</select>
+
+<!-- 커뮤니티 답글등록  -->
+	<insert id="commetnnewsave">
+	<selectKey resultType="int" keyProperty="commentno" order="BEFORE">
+			SELECT IFNULL(max(comment_no), 0) + 1 
+			FROM tb_board_comment
+		</selectKey>
+		INSERT INTO tb_board_comment
+		(
+		  comment_no
+		, loginID
+		, is_delete
+		, reg_date
+		, comment_content
+		) 
+		Values (
+		  #{commentno}
+		, #{loginId}
+		, 2
+		, #{comment_detfile}
+		)
+	</insert>
+</mapper>

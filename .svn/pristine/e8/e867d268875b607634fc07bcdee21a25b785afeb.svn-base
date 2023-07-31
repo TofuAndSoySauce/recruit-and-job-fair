@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.happyjob.study.userinfo.dao.CompanyMgtDao">
+	<!-- 기업정보 출력 -->
+	<select id="companyMgtDetail" resultType="kr.happyjob.study.userinfo.model.CompanyMgtModel">
+	SELECT ui.loginID,
+       ui.name,
+       ui.password,
+       ifnull(ui.user_phone, '대표자번호를 입력하세요') AS phone,
+       ifnull(ui.user_zipcode, '-') AS zipcode,
+       ifnull(ui.user_address1, '-') AS address1,
+       ifnull(ui.user_address2, '-') AS address2,
+       ifnull(ui.user_email, '-') AS email,
+       ifnull(ui.user_company_number, '-') AS companyNum,
+       ifnull(ccategory.detail_code, '') AS cCategoryCd,
+       ifnull(ccategory.detail_name, '-') AS cCategory,
+       ifnull(csize.detail_code, '') AS cSizeCd,
+       ifnull(csize.detail_name, '-') AS cSize,
+       ifnull(tf.file_cd, 0) AS fileCd,
+       tf.file_name,
+       tf.file_size,
+       tf.file_nadd,
+       tf.file_madd
+FROM tb_userinfo ui
+     LEFT OUTER JOIN tb_detail_code csize
+        ON     csize.group_code = 'company_size'
+           AND csize.detail_code = ui.user_company_size
+     LEFT OUTER JOIN tb_detail_code ccategory
+        ON     ccategory.group_code = 'company_category'
+           AND ccategory.detail_code = ui.user_company_category
+     LEFT OUTER JOIN tb_file tf ON ui.file_cd = tf.file_cd
+	WHERE loginID = #{loginId}
+	</select>
+
+	<!-- 기업정보 수정 without file -->
+	<update id="companyMgtUpdate">
+	update tb_userinfo
+			set 
+		       password  = #{password} ,
+		       user_phone = #{phone} ,
+		       user_zipcode = #{zipcode} ,
+		       user_address1 = #{address1} ,
+		       user_address2  = #{address2} ,
+		       user_email  = #{email} ,
+		       user_company_number  = #{companyNum} ,
+ 		       user_company_category  = #{cCategory} ,
+		       user_company_size  = #{cSize} ,
+		       update_date = date_format(Now(), '%Y-%m-%d'),
+		       file_cd = #{filecd}
+		where loginID = #{loginId}
+	</update>
+	<!-- 기업정보 수정 with file -->
+	<update id="companyMgtNewUpdateFile">
+	update tb_userinfo
+			set 
+		       password  = #{password} ,
+		       user_phone = #{phone} ,
+		       user_zipcode = #{zipcode} ,
+		       user_address1 = #{address1} ,
+		       user_address2  = #{address2} ,
+		       user_email  = #{email} ,
+		       user_company_number  = #{companyNum} ,
+ 		       user_company_category  = #{cCategory} ,
+		       user_company_size  = #{cSize} ,
+		       update_date = date_format(Now(), '%Y-%m-%d')
+		       file_cd = #{filecd}
+		where loginID = #{loginId}
+	</update>
+	<!-- categorySelect 기업업종 셀렉트박스-->
+	<select id="categorySelect" resultType="kr.happyjob.study.userinfo.model.CompanyMgtModel">
+	SELECT 
+		detail_code AS cCategoryCd, 
+		detail_name AS cCategory
+	FROM tb_detail_code
+	WHERE group_code = "company_category"
+	</select>
+	<!-- companySizeSelect  기업규모 셀렉트박스-->
+	<select id="companySizeSelect" resultType="kr.happyjob.study.userinfo.model.CompanyMgtModel">
+	SELECT 
+		detail_code AS cSizeCd, 
+		detail_name AS cSize
+	FROM tb_detail_code
+	WHERE group_code = "company_size"
+	</select>
+	<!-- 파일 코드 생성 -->
+	<select id="filecdcheck" resultType="int">
+		select
+			ifnull(max(file_cd),0) + 1
+		FROM tb_file
+	</select>
+	
+	<!-- 파일 저장 -->
+	<insert id="filenewsave">
+		insert into tb_file
+		(
+		file_cd
+		,file_type
+		,file_size
+		,file_name
+		,file_nadd
+		,file_madd
+		) values (
+		#{filecd}
+		,#{file_type}
+		,#{file_size}
+		,#{file_name}
+		,#{file_nadd}
+		,#{file_madd}
+		)
+	</insert>
+	<!-- 파일정보 업데이트 -->
+	<update id="fileupdate">
+		update tb_file
+			set
+		 		file_type = #{file_type}
+		,		file_size = #{file_size}
+		,		file_name = #{file_name}
+		,		file_nadd = #{file_nadd}
+		,		file_madd = #{file_madd}
+		where	file_cd = #{filecd}
+	</update>
+	<select id="companyMgtCNumCount" resultType="int">
+		SELECT COUNT(*) AS companyMgtCNumCount
+		FROM tb_userinfo
+		WHERE user_company_number = #{companyNum};
+	</select>
+</mapper>

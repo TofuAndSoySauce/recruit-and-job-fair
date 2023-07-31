@@ -1,0 +1,21 @@
+package kr.happyjob.study.history.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+public class HistoryRequestDto {
+
+	@AllArgsConstructor
+	@NoArgsConstructor
+	@Getter
+	@Setter
+	public static class Post {
+		
+		private String loginId;
+		private int adNo;
+		private int historyNo;
+		
+	}
+}

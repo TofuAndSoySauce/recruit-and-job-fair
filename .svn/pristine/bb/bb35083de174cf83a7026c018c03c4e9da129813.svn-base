@@ -1,0 +1,175 @@
+var pageSize = 5;
+var pageBlockSize = 5;
+
+$(function () {
+  fetchProposalList();
+  companyDetailPopupEvent();
+  proposalButtonEvent();
+  updatePropsalStatusEvent();
+});
+
+// 채용공고 리스트 조회
+function fetchProposalList(currentPage) {
+  // param 설정
+  currentPage = currentPage || 1;
+
+  const param = {
+    currentPage: currentPage,
+    pageSize: pageSize,
+  };
+
+  // callback after request
+  var proposalListCallback = function (response) {
+    $("#listNotice").empty().append(response);
+
+    var countnoticelist = $("#totcnt").val();
+
+    if(countnoticelist){
+    	var paging = getPaginationHtml(
+    		      currentPage,
+    		      countnoticelist,
+    		      pageSize,
+    		      pageBlockSize,
+    		      "fetchProposalList"
+    		    ); 
+
+  	    $("#noticePagination").empty().append(paging);
+
+  	    $("#currentpage").val(currentPage);
+         	
+    } else {
+    	const message = $("<div id='emptyResultArea'><p>받은 면접 제안이 없습니다.</p></div>")
+    	$('#listNotice').empty().append(message);
+    	$("#noticePagination").empty();
+    }
+  };
+
+  callAjax(
+    "/resume/proposal/list.do",
+    "GET",
+    "text",
+    "false",
+    param,
+    proposalListCallback
+  );
+}
+
+// 기업 상세보기 팝업
+function popupCompanyDetail(companyLoginId) {
+  const param = { companyLoginId: companyLoginId };
+  var detailCallback = function (res) {
+    console.log(res);
+    setCompanyDetail(res);
+    gfModalPop("#companyDetailModal");
+  };
+
+  callAjax(
+    "/resume/proposal/proposedCompany.do",
+    "GET",
+    "json",
+    "false",
+    param,
+    detailCallback
+  );
+}
+
+function companyDetailPopupEvent() {
+  $(document).on("click", ".company-link", function (event) {
+    event.preventDefault();
+    const companyLoginId = $(this).data("company-login-id");
+    console.log(companyLoginId);
+    popupCompanyDetail(companyLoginId);
+  });
+}
+
+function setCompanyDetail(object) {
+  $("#companyName").text(object.companyName);
+  $("#user_phone").text(object.phone);
+  $("#user_birthday").text(object.establishedDate);
+  $("#user_company_size").text(object.size);
+  $("#user_email").text(object.email);
+  $("#user_company_category").text(object.category);
+  $("#user_address").text(object.address);
+  $("#company_picture").attr("src", object.imageURL);
+}
+
+function proposalButtonEvent() {
+  $(document).on("click", ".acceptProposalButton", function () {
+    var $row = $(this).closest(".proposalListTr");
+    $row.find("input.accepted").val(true);
+    $row.find(".updateParamArea").show();
+    $row.find(".acceptButtonArea").hide();
+  });
+
+  $(document).on("click", ".proposalCloseButton", function () {
+    var $row = $(this).closest(".proposalListTr");
+    $row.find("input.accepted").val(false);
+    $row.find(".updateParamArea").hide();
+    $row.find(".acceptButtonArea").show();
+  });
+}
+
+function updatePropsalStatusEvent() {
+  $(document).on("click", ".proposalSubmitButton", function () {
+    var $row = $(this).closest(".proposalListTr");
+    var proposalNo = $row.find("input.proposalNo").val();
+    var accepted = $row.find("input.accepted").val();
+    var loginId = $("#loginId").val();
+    var redirectPageUrl = window.location.href;
+    var proposalMemo = $row.find("input.propsalMemo").val();
+
+    var param = {
+      accepted: accepted,
+      proposalNo: proposalNo,
+      proposalMemo: proposalMemo,
+      loginId: loginId,
+      redirectPageUrl: redirectPageUrl,
+    };
+
+    function updateProposalCallback(response) {
+      console.log(response);
+      alert("정상적으로 업데이트 되었습니다.");
+      window.location.replace(response.redirectPageUrl);
+    }
+
+    var json = JSON.stringify(param);
+    console.log(json);
+
+    $.ajax({
+      url: "/resume/proposal/updateStatus.do",
+      type: "PATCH",
+      async: true,
+      data: json,
+      contentType: "application/json",
+      beforeSend: function (xhr) {
+        xhr.setRequestHeader("AJAX", "true");
+        $.blockUI({
+          message:
+            '<h1><img src="/images/admin/comm/busy.gif" /> Just a moment...</h1>',
+          T: 99999,
+        });
+      },
+      success: function (data) {
+        updateProposalCallback(data);
+      },
+      error: function (xhr, status, err) {
+        console.log("xhr : " + xhr);
+        console.log("status : " + status);
+        console.log("err : " + err);
+
+        if (xhr.status == 901) {
+          alert("로그인 정보가 없습니다.\n다시 로그인 해 주시기 바랍니다.");
+          location.replace("/login.do");
+        } else if (xhr.status == 500) {
+          alert("서버 에러");
+          location.replace(redirectPageUrl);
+        } else {
+          alert("A system error has occurred." + err);
+        }
+      },
+      complete: function (data) {
+        $.unblockUI();
+      },
+    });
+  });
+}

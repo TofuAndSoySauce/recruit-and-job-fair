@@ -1,0 +1,89 @@
+package kr.happyjob.study.fair.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.happyjob.study.fair.model.FairMgtModel;
+import kr.happyjob.study.fair.service.FairMgtService;
+
+@Controller
+@RequestMapping("/fair/")
+public class CompanyMgtController {
+	
+	@Autowired
+	FairMgtService fairMgtService;
+	
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+	
+	@RequestMapping("jobFairCompanyMgt.do")
+	public String fCreation(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+
+		return "fair/jobFairCompanyMgt";
+	}
+	
+	@RequestMapping("fairList.do")
+	public String fairList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception{
+		logger.info("   - paramMap : " + paramMap);
+		
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		
+		List<FairMgtModel> fairlist = fairMgtService.fairlist(paramMap);
+		
+		int countfairlist = fairMgtService.countfairlist(paramMap);
+		
+		model.addAttribute("fairlist", fairMgtService.fairlist(paramMap));
+		model.addAttribute("countfairlist", fairMgtService.countfairlist(paramMap));
+
+		return "fair/fairList";
+	}
+	
+	// 승인,반려
+	@RequestMapping("fairSwal.do")
+	@ResponseBody
+	public int fairSwal(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception{
+		logger.info("   - paramMap : " + paramMap);
+		
+		
+		String type = (String) paramMap.get("type"); // 타입을 변수에 저장함
+		int result = 0;
+		
+		if("A".equals(type))
+		{
+			// 승인 로직
+			result = fairMgtService.acceptRequest(paramMap);
+		}
+		if("N".equals(type))
+		{
+			// 반려 로직
+			result = fairMgtService.rejectRequest(paramMap);
+		}
+		
+		return result;
+	}
+	
+}
